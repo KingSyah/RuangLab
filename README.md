@@ -1,12 +1,12 @@
 # Ruang Lab
 
-Website ini adalah antarmuka digital untuk pengelolaan ruang laboratorium, seperti peminjaman alat, jadwal penggunaan ruang, dan inventaris.
+Website ini adalah antarmuka digital untuk pengelolaan ruang laboratorium dan jadwal penggunaan ruang
 
 🔗 [Lihat versi online](https://kingsyah.github.io/RuangLab/)
 
 ## Fitur
-- Daftar alat dan ruang lab
-- Sistem peminjaman sederhana
+- Daftar jadwal dan kegiatan ruang lab
+- Sistem penjadwalan sederhana
 - Antarmuka bersih dan modern
 
 ## Teknologi
