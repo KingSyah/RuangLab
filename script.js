@@ -306,9 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const keterangan = (schedule.Keterangan || '').toLowerCase().trim();
                         const isPindah = keterangan === 'pindah';
                         const isTambah = keterangan === 'tambah';
+                        const isBatal  = keterangan === 'batal';
 
                         if (isPindah) itemDiv.classList.add('schedule-pindah');
                         if (isTambah) itemDiv.classList.add('schedule-tambah');
+                        if (isBatal)  itemDiv.classList.add('schedule-batal');
 
                         // Format Pengajar
                         const pengajar = (schedule.Pengajar || '').trim();
@@ -339,9 +341,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             htmlContent += `<p class="item-activity empty-data">Data tidak lengkap</p>`;
                         }
 
-                        // Stamps — always rendered
-                        if (isPindah) htmlContent += `<div class="stamp pindah-stamp">PINDAH</div>`;
-                        if (isTambah) htmlContent += `<div class="stamp tambah-stamp">TAMBAH</div>`;
+                        // Status labels — shown as pill badges
+                        const labels = [];
+                        if (isBatal)  labels.push(`<span class="badge badge-batal">✕ Dibatalkan</span>`);
+                        if (isPindah) labels.push(`<span class="badge badge-pindah">↩ Dipindah</span>`);
+                        if (isTambah) labels.push(`<span class="badge badge-tambah">＋ Tambahan</span>`);
+                        if (labels.length > 0) {
+                            htmlContent += `<div class="badge-row">${labels.join('')}</div>`;
+                        }
 
                         itemDiv.innerHTML = htmlContent;
                         cell.appendChild(itemDiv);
@@ -380,12 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             allScheduleData = parseCSV(csvText);
-
-            // Filter out only cancelled entries
-            allScheduleData = allScheduleData.filter(item => {
-                const keterangan = (item.Keterangan || '').toLowerCase().trim();
-                return keterangan !== 'batal';
-            });
 
             const now = new Date();
             dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
