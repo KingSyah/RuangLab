@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     dom.addDataBtn.addEventListener('click', () => {
-        const formUrl = 'https://kingsyah.codeberg.page/loki/';
+        const formUrl = 'https://kingsyah.codeberg.page/lok1/form1.html';
         window.open(formUrl, '_blank', 'noopener,noreferrer');
         const orig = dom.addDataBtn.textContent;
         dom.addDataBtn.textContent = '✓';
