@@ -38,15 +38,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    // Parse "DD/MM/YYYY" as a LOCAL date (avoids UTC timezone shift bug)
+    const parseTanggal = (str) => {
+        const [d, m, y] = str.split('/');
+        return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    };
+
     // Count schedule items for a given week (Mon–Sat)
     const countItemsInWeek = (weekStart) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 5);
         return allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
-            const [d, m, y] = item.Tanggal.split('/');
-            if (!d || !m || !y) return false;
-            const itemDate = new Date(`${y}-${m}-${d}`);
+            const parts = item.Tanggal.split('/');
+            if (parts.length < 3) return false;
+            const itemDate = parseTanggal(item.Tanggal);
             const status = (item.Status || '').toLowerCase().trim();
             if (status === 'ulang') return true; // recurring always present
             return itemDate >= weekStart && itemDate <= weekEnd;
@@ -202,9 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filter this week's data
         const weekData = allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
-            const [day, month, year] = item.Tanggal.split('/');
-            if (!day || !month || !year) return false;
-            const itemDate = new Date(`${year}-${month}-${day}`);
+            const parts = item.Tanggal.split('/');
+            if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) return false;
+            const itemDate = parseTanggal(item.Tanggal);
             const status = (item.Status || '').toLowerCase().trim();
 
             if (status === 'ulang') {
@@ -271,9 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isToday) cell.classList.add('cell-today');
 
                 const schedules = weekData.filter(item => {
-                    const [d, m, y] = item.Tanggal.split('/');
-                    if (!d || !m || !y) return false;
-                    const itemDate = new Date(`${y}-${m}-${d}`);
+                    const parts = item.Tanggal.split('/');
+                    if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) return false;
+                    const itemDate = parseTanggal(item.Tanggal);
                     const status = (item.Status || '').toLowerCase().trim();
                     const sesiMatch = item.Sesi === sessionKey;
                     let dateMatch = false;
