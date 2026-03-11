@@ -1,0 +1,529 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface-2: #f8f9fb;
+    --border: #e4e7ec;
+    --border-strong: #d0d5dd;
+    --text-primary: #101828;
+    --text-secondary: #475467;
+    --text-muted: #98a2b3;
+    --accent: #1d4ed8;
+    --accent-light: #eff4ff;
+    --today-bg: #eff6ff;
+    --today-border: #93c5fd;
+    --radius: 8px;
+    --radius-sm: 5px;
+
+    /* Lab Colors */
+    --lab-prk-bg: #ecfeff;
+    --lab-prk-border: #06b6d4;
+    --lab-prk-text: #0e7490;
+
+    --lab-jarkom-bg: #f0fdf4;
+    --lab-jarkom-border: #22c55e;
+    --lab-jarkom-text: #15803d;
+
+    --lab-ai-bg: #fff7ed;
+    --lab-ai-border: #f97316;
+    --lab-ai-text: #c2410c;
+
+    --lab-multimedia-bg: #faf5ff;
+    --lab-multimedia-border: #a855f7;
+    --lab-multimedia-text: #7e22ce;
+
+    --lab-default-bg: #f8f9fb;
+    --lab-default-border: #cbd5e1;
+    --lab-default-text: #475467;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 1rem;
+    line-height: 1.5;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background-color: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+
+/* ── HEADER ─────────────────────────── */
+header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+header h1 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#week-display {
+    flex: 1;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+    font-family: 'DM Mono', monospace;
+}
+
+.nav-button {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.nav-button:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: #bfdbfe;
+}
+
+/* ── TOOLBAR ─────────────────────────── */
+.refresh-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.875rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--border);
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.refresh-button {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.refresh-button:hover { background: #f1f5f9; }
+.refresh-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.add-data-button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.add-data-button:hover {
+    background: #1e40af;
+    transform: scale(1.08);
+}
+
+.week-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+}
+
+.week-info span::before {
+    content: '·';
+    margin-right: 0.4rem;
+    opacity: 0.5;
+}
+
+/* ── NOTICE BANNER ─────────────────────────── */
+.week-notice {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.75rem 1.25rem 0;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.week-notice--info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.week-notice--warn {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+}
+
+.notice-icon { font-size: 1rem; flex-shrink: 0; }
+
+.notice-text { flex: 1; line-height: 1.4; }
+
+.notice-jump {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.notice-jump:hover { background: #1e40af; }
+
+.week-notice--warn .notice-jump {
+    background: #d97706;
+}
+
+.week-notice--warn .notice-jump:hover {
+    background: #b45309;
+}
+
+/* ── MAIN ─────────────────────────── */
+main {
+    padding: 0.75rem 1.25rem 1.25rem;
+}
+
+.loading-indicator {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 3rem 2rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.loading-indicator::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg {
+    color: #ef4444;
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.875rem;
+}
+
+.calendar-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── GRID ─────────────────────────── */
+#calendar-grid {
+    display: grid;
+    grid-template-columns: 76px repeat(6, 1fr);
+    gap: 4px;
+    min-width: 580px;
+}
+
+.grid-header {
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border: 1px solid transparent;
+}
+
+.grid-header.is-today {
+    background: var(--today-bg);
+    border-color: var(--today-border);
+}
+
+.day-name {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+}
+
+.day-name.today {
+    color: var(--accent);
+}
+
+.day-date {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+}
+
+.session-header {
+    padding: 0.5rem 0.4rem;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.sesi-label {
+    font-weight: 600;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.sesi-time {
+    font-size: 0.63rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.grid-cell {
+    min-height: 90px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 3px;
+    transition: border-color 0.15s;
+}
+
+/* Today column highlight */
+.grid-cell.cell-today {
+    background: var(--today-bg);
+    border-color: var(--today-border);
+}
+
+/* ── SCHEDULE ITEMS ─────────────────────────── */
+.schedule-item {
+    padding: 0.55rem 0.6rem;
+    border-left: 3px solid;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: relative;
+    transition: box-shadow 0.15s;
+}
+
+.schedule-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.schedule-item p {
+    margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.item-room {
+    font-weight: 700;
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+
+.item-lecturer {
+    font-size: 0.74rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--text-secondary);
+}
+
+.item-activity {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.3;
+}
+
+.item-activity.empty-data { color: #d1d5db; }
+
+/* Lab Colors */
+.lab-prk       { background-color: var(--lab-prk-bg);       border-color: var(--lab-prk-border); }
+.lab-prk       .item-room { color: var(--lab-prk-text); }
+.lab-jarkom    { background-color: var(--lab-jarkom-bg);    border-color: var(--lab-jarkom-border); }
+.lab-jarkom    .item-room { color: var(--lab-jarkom-text); }
+.lab-ai        { background-color: var(--lab-ai-bg);        border-color: var(--lab-ai-border); }
+.lab-ai        .item-room { color: var(--lab-ai-text); }
+.lab-multimedia { background-color: var(--lab-multimedia-bg); border-color: var(--lab-multimedia-border); }
+.lab-multimedia .item-room { color: var(--lab-multimedia-text); }
+.lab-default   { background-color: var(--lab-default-bg);   border-color: var(--lab-default-border); }
+.lab-default   .item-room { color: var(--lab-default-text); }
+
+/* PINDAH / TAMBAH Status */
+.schedule-pindah { opacity: 0.78; }
+.schedule-tambah { filter: brightness(1.02); }
+
+/* Stamps */
+.stamp {
+    position: absolute;
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.6px;
+    font-family: 'DM Mono', monospace;
+    pointer-events: none;
+    line-height: 1;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.pindah-stamp {
+    top: 4px;
+    right: 4px;
+    background: #dc2626;
+    color: white;
+    transform: rotate(8deg);
+}
+
+.tambah-stamp {
+    bottom: 4px;
+    right: 4px;
+    background: #1d4ed8;
+    color: white;
+    transform: rotate(-6deg);
+}
+
+/* ── FOOTER ─────────────────────────── */
+footer {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    background: var(--surface-2);
+}
+
+footer p {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+}
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width: 768px) {
+    body { padding: 0.5rem; }
+
+    header { padding: 1rem; }
+    header h1 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+
+    nav { gap: 0.4rem; }
+    #week-display { font-size: 0.75rem; }
+    .nav-button { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+
+    .refresh-section { margin-top: 0.75rem; padding-top: 0.75rem; }
+
+    main { padding: 0.5rem 0.75rem 0.75rem; }
+
+    .week-notice { margin: 0.5rem 0.75rem 0; font-size: 0.78rem; }
+
+    #calendar-grid {
+        grid-template-columns: 62px repeat(6, 150px);
+    }
+
+    .grid-cell { min-height: 80px; }
+}
+
+@media (max-width: 480px) {
+    body { padding: 0.25rem; }
+
+    header { padding: 0.875rem 0.875rem 0.75rem; }
+    header h1 { font-size: 0.875rem; }
+
+    nav { gap: 0.3rem; }
+    .nav-button { padding: 0.4rem 0.5rem; font-size: 0.7rem; }
+    #week-display { font-size: 0.7rem; }
+
+    main { padding: 0.4rem 0.5rem 0.75rem; }
+
+    .week-notice { margin: 0.4rem 0.5rem 0; font-size: 0.74rem; padding: 0.5rem 0.7rem; }
+
+    #calendar-grid {
+        grid-template-columns: 56px repeat(6, 128px);
+    }
+
+    .grid-cell { min-height: 72px; padding: 2px; }
+    .schedule-item { padding: 0.4rem 0.5rem; }
+    .item-room { font-size: 0.72rem; }
+    .item-lecturer { font-size: 0.68rem; }
+    .item-activity { font-size: 0.62rem; }
+
+    .session-header { padding: 0.4rem 0.3rem; }
+    .sesi-label { font-size: 0.65rem; }
+    .sesi-time { font-size: 0.58rem; }
+
+    footer { padding: 0.6rem 0.875rem; }
+
+    .stamp { font-size: 0.52rem; padding: 1px 4px; }
+}
