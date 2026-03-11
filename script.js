@@ -100,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const parseCSV = (text) => {
-        const lines = text.trim().split('\n');
+        // Normalize line endings: strip \r so Windows CRLF doesn't corrupt values
+        const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
         const headersLine = lines[0] || '';
 
         const headers = [];
@@ -145,15 +146,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             values.push(currentVal.trim());
 
-            if (values.length === headers.length) {
+            // Pad or trim values to match headers length so rows aren't silently dropped
+            while (values.length < headers.length) values.push('');
+            if (values.length >= headers.length) {
                 const obj = headers.reduce((result, header, index) => {
-                    result[header] = values[index] || '';
+                    result[header] = (values[index] || '').replace(/[\r\n]/g, '').trim();
                     return result;
                 }, {});
 
                 if (obj.Sesi) {
-                    const sesiMatch = obj.Sesi.match(/Sesi\s*(\d+)/i);
-                    if (sesiMatch) obj.Sesi = sesiMatch[1];
+                    // Strip invisible chars and whitespace first
+                    const cleanSesi = obj.Sesi.replace(/[\u200B-\u200D\uFEFF\r\n]/g, '').trim();
+                    const sesiMatch = cleanSesi.match(/(\d+)/);
+                    obj.Sesi = sesiMatch ? sesiMatch[1] : cleanSesi;
                 }
 
                 return obj;
