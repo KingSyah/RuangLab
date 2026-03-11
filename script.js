@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     dom.addDataBtn.addEventListener('click', () => {
-        const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfkRcjb5wr1Q0rizu_JgQYyYi8495sLwW7QBqywJIXrjNbnUQ/viewform';
+        const formUrl = 'https://kingsyah.codeberg.page/loki/';
         window.open(formUrl, '_blank', 'noopener,noreferrer');
         const orig = dom.addDataBtn.textContent;
         dom.addDataBtn.textContent = '✓';
