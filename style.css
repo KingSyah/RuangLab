@@ -369,7 +369,6 @@ main {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    position: relative;
     transition: box-shadow 0.15s;
 }
 
@@ -417,39 +416,64 @@ main {
 .lab-default   { background-color: var(--lab-default-bg);   border-color: var(--lab-default-border); }
 .lab-default   .item-room { color: var(--lab-default-text); }
 
-/* PINDAH / TAMBAH Status */
-.schedule-pindah { opacity: 0.78; }
-.schedule-tambah { filter: brightness(1.02); }
+/* PINDAH / TAMBAH / BATAL Status */
+.schedule-pindah {
+    opacity: 0.72;
+}
+.schedule-tambah {
+    filter: brightness(1.02);
+}
+.schedule-batal {
+    opacity: 0.55;
+    filter: grayscale(60%);
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,0.3);
+}
+.schedule-batal .item-room,
+.schedule-batal .item-lecturer,
+.schedule-batal .item-activity {
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,0.25);
+}
 
-/* Stamps */
-.stamp {
-    position: absolute;
-    font-size: 0.58rem;
+/* Badge pills */
+.badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.6rem;
     font-weight: 700;
-    padding: 2px 5px;
-    border-radius: 3px;
-    letter-spacing: 0.6px;
-    font-family: 'DM Mono', monospace;
-    pointer-events: none;
-    line-height: 1;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    font-family: 'DM Sans', sans-serif;
+    padding: 2px 6px;
+    border-radius: 99px;
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
-.pindah-stamp {
-    top: 4px;
-    right: 4px;
-    background: #dc2626;
-    color: white;
-    transform: rotate(8deg);
+.badge-batal {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
 }
 
-.tambah-stamp {
-    bottom: 4px;
-    right: 4px;
-    background: #1d4ed8;
-    color: white;
-    transform: rotate(-6deg);
+.badge-pindah {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.badge-tambah {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
 }
 
 /* ── FOOTER ─────────────────────────── */
@@ -524,6 +548,4 @@ footer p {
     .sesi-time { font-size: 0.58rem; }
 
     footer { padding: 0.6rem 0.875rem; }
-
-    .stamp { font-size: 0.52rem; padding: 1px 4px; }
 }
