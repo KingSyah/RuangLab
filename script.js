@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const SHEETS_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFAwLD3PgidBYNKVR3gdW2wS_oD0VyYhuLP8IYh34eXEJ8iEA3KVaX_nWxLJVmZsB62cj1P-bisn70/pub?output=csv';
+    const SHEETS_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
     const dom = {
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     dom.addDataBtn.addEventListener('click', () => {
-        const formUrl = 'https://netkey.netlify.app/';
+        const formUrl = 'https://ruanglab.netlify.app/';
         window.open(formUrl, '_blank', 'noopener,noreferrer');
         const orig = dom.addDataBtn.textContent;
         dom.addDataBtn.textContent = '✓';
