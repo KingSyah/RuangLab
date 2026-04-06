@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Laboratorium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <h1 class="title">🔬 Jadwal Laboratorium</h1>
+            <p class="subtitle">Jadwal Penggunaan Laboratorium</p>
+        </div>
+        <div class="header-right">
+            <a href="admin.html" class="admin-link" title="Admin Panel">⚙️ Admin</a>
+        </div>
+    </header>
+
+    <!-- Week Navigation -->
+    <div class="week-nav">
+        <button class="nav-btn" id="prev-week" aria-label="Minggu sebelumnya">‹</button>
+        <div class="week-center">
+            <span id="week-display" class="week-range">—</span>
+            <span id="week-info" class="week-meta"></span>
+        </div>
+        <button class="nav-btn" id="next-week" aria-label="Minggu selanjutnya">›</button>
+    </div>
+
+    <!-- Week Notice -->
+    <div class="week-notice" id="week-notice" style="display:none"></div>
+
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <span>Memuat jadwal...</span>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid" id="calendar-grid"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-left">
+            <span id="last-updated" class="last-updated">—</span>
+        </div>
+        <div class="footer-right">
+            <button class="refresh-btn" id="refresh-btn">↻ Refresh</button>
+            <span class="footer-year">© <span id="year"></span></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Jadwal Laboratorium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- ═══════════════ SUPABASE ═══════════════ -->
+    <!-- ⚠️ WAJIB GANTI: ambil dari Supabase Dashboard → Settings → API -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+      // ┌──────────────────────────────────────────────────┐
+      // │  GANTI 2 BARIS DI BAWAH INI                      │
+      // │                                                    │
+      // │  1. Buka supabase.com → Dashboard → Settings → API │
+      // │  2. Copy Project URL → paste ke SUPABASE_URL       │
+      // │  3. Copy "anon public" key → paste ke ANON_KEY     │
+      // └──────────────────────────────────────────────────┘
+      const SUPABASE_URL = 'https://qfbqoyyatqjgraybkhcr.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmYnFveXlhdHFqZ3JheWJraGNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NTA1MjgsImV4cCI6MjA5MTAyNjUyOH0.jM8sHZS-avWnfPpqyBmXcXC3tpeJlQQdlcvr1w2-hgc';
+
+      let sb = null;
+      let supabaseReady = false;
+
+      try {
+        if (typeof supabase !== 'undefined'
+            && !SUPABASE_URL.includes('YOUR_')
+            && !SUPABASE_ANON_KEY.includes('YOUR_')) {
+          sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseReady = true;
+        }
+      } catch(e) {
+        console.error('Supabase init error:', e);
+      }
+    </script>
+
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-2: #232733;
+            --surface-3: #2c3040;
+            --border: #353a4a;
+            --border-focus: #6366f1;
+            --text: #e8eaed;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-bg: rgba(99,102,241,0.12);
+            --success: #22c55e;
+            --success-bg: rgba(34,197,94,0.12);
+            --danger: #ef4444;
+            --danger-bg: rgba(239,68,68,0.12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245,158,11,0.12);
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+        /* ── GATE SCREEN ────────────────────── */
+        .gate-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+        .gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center}
+        .gate-card .logo{font-size:2.5rem;margin-bottom:.75rem}
+        .gate-card h1{font-size:1.25rem;font-weight:700;margin-bottom:.25rem}
+        .gate-card .subtitle{font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem}
+        .form-group{text-align:left;margin-bottom:1rem}
+        .form-group label{display:block;font-size:.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.04em}
+        .form-group input{width:100%;padding:.65rem .85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;outline:none}
+        .form-group input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+        .login-error{background:var(--danger-bg);color:var(--danger);padding:.6rem .85rem;border-radius:var(--radius);font-size:.82rem;margin-bottom:1rem;display:none}
+        .hint{font-size:.72rem;color:var(--text-muted);margin-top:1rem}
+        .gate-card a{color:var(--accent);text-decoration:none;font-size:.78rem}
+        .gate-card a:hover{text-decoration:underline}
+
+        /* ── DASHBOARD ────────────────────── */
+        .dashboard{display:none;min-height:100vh}
+        .dashboard.active{display:block}
+        .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+        .topbar-left{display:flex;align-items:center;gap:.75rem}
+        .topbar-left h1{font-size:1rem;font-weight:700}
+        .badge-env{background:var(--accent-bg);color:var(--accent);font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
+        .topbar-right{display:flex;align-items:center;gap:.75rem}
+        .user-info{font-size:.82rem;color:var(--text-secondary)}
+        .user-info strong{color:var(--text)}
+        .main-content{padding:1.5rem;max-width:1400px;margin:0 auto}
+
+        /* ── STATS ────────────────────── */
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem}
+        .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem}
+        .stat-card .stat-label{font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+        .stat-card .stat-value{font-size:1.75rem;font-weight:700;margin-top:.25rem}
+        .stat-card .stat-sub{font-size:.72rem;color:var(--text-muted);margin-top:.15rem}
+
+        /* ── TOOLBAR ────────────────────── */
+        .toolbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
+        .toolbar-left{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+        .toolbar-right{display:flex;gap:.5rem;align-items:center}
+        .search-box{position:relative}
+        .search-box input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:.5rem .5rem .5rem 2rem;font-size:.82rem;font-family:inherit;width:250px;outline:none;transition:border-color .15s}
+        .search-box input:focus{border-color:var(--border-focus)}
+        .search-box::before{content:'🔍';position:absolute;left:.6rem;top:50%;transform:translateY(-50%);font-size:.75rem}
+
+        /* ── FILTERS ────────────────────── */
+        .filter-bar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+        .filter-chip{background:var(--surface-2);border:1px solid var(--border);border-radius:99px;padding:.3rem .7rem;font-size:.72rem;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;font-family:inherit}
+        .filter-chip:hover{background:var(--surface-3);color:var(--text)}
+        .filter-chip.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+
+        /* ── TABLE ────────────────────── */
+        .table-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;position:relative}
+        .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:960px}
+        thead th{background:var(--surface-2);padding:.7rem .85rem;text-align:left;font-weight:700;font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap}
+        tbody td{padding:.65rem .85rem;border-bottom:1px solid var(--border);vertical-align:middle}
+        tbody tr:last-child td{border-bottom:none}
+        tbody tr{transition:background .1s}
+        tbody tr:hover{background:var(--surface-2)}
+        .col-row-num{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted);width:40px;text-align:center}
+        .col-actions{width:130px;white-space:nowrap}
+        .action-btns{display:flex;gap:.3rem}
+        .tag{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:99px}
+        .tag-lab-sinyal{background:rgba(6,182,212,.15);color:#06b6d4}
+        .tag-lab-data{background:rgba(34,197,94,.15);color:#22c55e}
+        .tag-lab-musiq{background:rgba(249,115,22,.15);color:#f97316}
+        .tag-lab-multimedia{background:rgba(168,85,247,.15);color:#a855f7}
+        .tag-status-batal{background:var(--danger-bg);color:var(--danger)}
+        .tag-status-pindah{background:var(--warning-bg);color:var(--warning)}
+        .tag-status-tambah{background:rgba(59,130,246,.15);color:#3b82f6}
+        .tag-status-ulang{background:var(--success-bg);color:var(--success)}
+
+        /* ── MODAL ────────────────────── */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+        .modal-overlay.active{display:flex}
+        .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:modalIn .15s ease-out}
+        @keyframes modalIn{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .modal-header h2{font-size:1rem;font-weight:700}
+        .modal-close{background:none;border:none;color:var(--text-muted);font-size:1.25rem;cursor:pointer;padding:.25rem;line-height:1}
+        .modal-close:hover{color:var(--text)}
+        .modal-body{padding:1.5rem}
+        .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .form-hint{font-size:.72rem;color:var(--text-muted);margin-top:.25rem}
+
+        /* ── BUTTONS ────────────────────── */
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.65rem 1.25rem;border:none;border-radius:var(--radius);font-size:.85rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        .btn-primary{background:var(--accent);color:#fff;width:100%}
+        .btn-primary:hover:not(:disabled){background:var(--accent-hover)}
+        .btn-secondary{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border)}
+        .btn-secondary:hover:not(:disabled){background:var(--surface-3);color:var(--text)}
+        .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid transparent}
+        .btn-danger:hover:not(:disabled){background:var(--danger);color:#fff}
+        .btn-success{background:var(--success-bg);color:var(--success);border:1px solid transparent}
+        .btn-success:hover:not(:disabled){background:var(--success);color:#fff}
+        .btn-sm{padding:.4rem .75rem;font-size:.78rem}
+        .btn-icon{width:32px;height:32px;padding:0;border-radius:6px;font-size:.9rem}
+
+        /* ── TOAST ────────────────────── */
+        .toast-container{position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem}
+        .toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;font-size:.82rem;display:flex;align-items:center;gap:.5rem;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .2s ease-out;min-width:250px}
+        .toast-success{border-left:3px solid var(--success)}
+        .toast-error{border-left:3px solid var(--danger)}
+        .toast-info{border-left:3px solid var(--accent)}
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+        /* ── LOADING ────────────────────── */
+        .loading-overlay{display:none;position:absolute;inset:0;background:rgba(15,17,23,.5);align-items:center;justify-content:center;z-index:50;border-radius:var(--radius-lg)}
+        .loading-overlay.active{display:flex}
+        .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .empty-state{text-align:center;padding:3rem 2rem;color:var(--text-muted)}
+        .empty-state .empty-icon{font-size:3rem;margin-bottom:.75rem}
+
+        /* ── RESPONSIVE ────────────────────── */
+        @media(max-width:768px){
+            .main-content{padding:1rem}
+            .toolbar{flex-direction:column;align-items:stretch}
+            .toolbar-left,.toolbar-right{justify-content:center;flex-wrap:wrap}
+            .search-box input{width:100%;min-width:0}
+            .search-box{width:100%}
+            .stats-row{grid-template-columns:repeat(2,1fr)}
+            .form-row{grid-template-columns:1fr}
+            .topbar{padding:.75rem 1rem;flex-wrap:wrap;gap:.5rem}
+            .topbar-left h1{font-size:.9rem}
+            .filter-bar{justify-content:center}
+            .gate-card{padding:2rem 1.5rem;margin:0 .5rem}
+            .modal{margin:.5rem;max-height:85vh}
+            .modal-body{padding:1rem}
+            table{min-width:700px}
+        }
+        @media(max-width:480px){
+            .stats-row{grid-template-columns:1fr}
+            .gate-card{padding:1.5rem 1.25rem}
+            .gate-card .logo{font-size:2rem}
+            .gate-card h1{font-size:1.1rem}
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ GATE (belum login) ═══════════════ -->
+<div class="gate-screen" id="gateScreen">
+    <div class="gate-card">
+        <div class="logo">🔬</div>
+        <h1>Admin Panel</h1>
+        <p class="subtitle">Jadwal Penggunaan Laboratorium</p>
+        <div class="login-error" id="loginError"></div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="admin@kampus.ac.id" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Masukkan password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" id="loginBtn">🔐 Login</button>
+        </form>
+        <p class="hint">Hanya admin yang terdaftar di Supabase yang bisa mengakses.</p>
+        <p style="margin-top:.75rem"><a href="index.html">← Kembali ke Jadwal</a></p>
+    </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD (sudah login) ═══════════════ -->
+<div class="dashboard" id="dashboard">
+    <div class="topbar">
+        <div class="topbar-left">
+            <span style="font-size:1.3rem">🔬</span>
+            <h1>Admin Panel</h1>
+            <span class="badge-env">Jadwal Lab</span>
+        </div>
+        <div class="topbar-right">
+            <div class="user-info">👤 <strong id="currentUser">—</strong></div>
+            <a href="index.html" style="color:var(--text-muted);font-size:.82rem;text-decoration:none;margin-right:.25rem">📅 Jadwal</a>
+            <button class="btn btn-secondary btn-sm" onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">Total Jadwal</div><div class="stat-value" id="statTotal">—</div></div>
+            <div class="stat-card"><div class="stat-label">Laboratorium</div><div class="stat-value" id="statLabs">—</div><div class="stat-sub" id="statLabsSub"></div></div>
+            <div class="stat-card"><div class="stat-label">Pengajar</div><div class="stat-value" id="statPengajar">—</div></div>
+            <div class="stat-card"><div class="stat-label">Update</div><div class="stat-value" style="font-size:1rem;margin-top:.5rem" id="statLastUpdate">—</div></div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="search-box"><input type="text" id="searchInput" placeholder="Cari jadwal..." oninput="applyFilters()"></div>
+                <button class="btn btn-secondary btn-sm" onclick="loadData()">↻ Muat Ulang</button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Tambah Jadwal</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <button class="filter-chip active" onclick="setFilter('all',this)">Semua</button>
+            <button class="filter-chip" onclick="setFilter('sinyal',this)">Lab Sinyal</button>
+            <button class="filter-chip" onclick="setFilter('data',this)">Lab Data</button>
+            <button class="filter-chip" onclick="setFilter('musiq',this)">Lab Musiq</button>
+            <button class="filter-chip" onclick="setFilter('multimedia',this)">Lab Multimedia</button>
+            <button class="filter-chip" onclick="setFilter('batal',this)">Dibatalkan</button>
+            <button class="filter-chip" onclick="setFilter('pindah',this)">Dipindah</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper" style="position:relative">
+            <div class="loading-overlay" id="tableLoading"><div class="spinner"></div></div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr>
+                        <th class="col-row-num">#</th>
+                        <th>Tanggal</th><th>Hari</th><th>Sesi</th><th>Ruang</th>
+                        <th>Pengajar</th><th>Kegiatan</th><th>Keterangan</th><th>Status</th>
+                        <th class="col-actions">Aksi</th>
+                    </tr></thead>
+                    <tbody id="tableBody"><tr><td colspan="10" class="empty-state">Memuat data...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ EDIT MODAL ═══════════════ -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-header"><h2>✏️ Edit Jadwal</h2><button class="modal-close" onclick="closeModal('editModal')">&times;</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editRowIndex">
+            <div class="form-row">
+                <div class="form-group"><label>Tanggal</label><input type="date" id="editTanggal"><div class="form-hint">Hari otomatis dari tanggal</div></div>
+                <div class="form-group"><label>Hari</label><input type="text" id="editHari" placeholder="Otomatis dari tanggal" readonly style="opacity:.6"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Sesi</label><select id="editSesi"><option value="Sesi 1 (08.30 - 10.30)">Sesi 1 (08.30–10.30)</option><option value="Sesi 2 (10.45 - 12.30)">Sesi 2 (10.45–12.30)</option><option value="Sesi 3 (14.00 - 16.30)">Sesi 3 (14.00–16.30)</option><option value="Sesi 4 (16.30 - 18.00)">Sesi 4 (16.30–18.00)</option></select></div>
+                <div class="form-group"><label>Ruang</label><select id="editRuang"><option value="Lab Sinyal">Lab Sinyal</option><option value="Lab Data">Lab Data</option><option value="Lab Musiq">Lab Musiq</option><option value="Lab Multimedia">Lab Multimedia</option><option value="custom">Manual...</option></select></div>
+            </div>
+            <div id="editRuangCustomWrap" style="display:none" class="form-group"><label>Nama Ruang</label><input type="text" id="editRuangCustom"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Pengajar</label><input type="text" id="editPengajar" placeholder="Nama pengajar"></div>
+                <div class="form-group"><label>Kegiatan</label><input type="text" id="editKegiatan" placeholder="Kegiatan / mata kuliah"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Keterangan</label><select id="editKeterangan"><option value="">—</option><option value="pindah">Pindah</option><option value="tambah">Tambah</option><option value="batal">Batal</option></select></div>
+                <div class="form-group"><label>Status</label><select id="editStatus"><option value="">Normal</option><option value="ulang">Ulang (Mingguan)</option></select></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('editModal')">Batal</button>
+            <button class="btn btn-danger btn-sm" onclick="quickDeleteFromEdit()">🗑️</button>
+            <button class="btn btn-success" id="saveEditBtn" onclick="saveEdit()">💾 Simpan</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ ADD MODAL ═══════════════ -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <div class="modal-header"><h2>➕ Tambah Jadwal</h2><button class="modal-close" onclick="closeModal('addModal')">&times;</button></div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group"><label>Tanggal</label><input type="date" id="addTanggal"><div class="form-hint">Hari otomatis dari tanggal</div></div>
+                <div class="form-group"><label>Sesi</label><select id="addSesi"><option value="Sesi 1 (08.30 - 10.30)">Sesi 1 (08.30–10.30)</option><option value="Sesi 2 (10.45 - 12.30)">Sesi 2 (10.45–12.30)</option><option value="Sesi 3 (14.00 - 16.30)">Sesi 3 (14.00–16.30)</option><option value="Sesi 4 (16.30 - 18.00)">Sesi 4 (16.30–18.00)</option></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Ruang</label><select id="addRuang"><option value="Lab Sinyal">Lab Sinyal</option><option value="Lab Data">Lab Data</option><option value="Lab Musiq">Lab Musiq</option><option value="Lab Multimedia">Lab Multimedia</option><option value="custom">Manual...</option></select></div>
+                <div class="form-group"><label>Pengajar</label><input type="text" id="addPengajar" placeholder="Nama pengajar"></div>
+            </div>
+            <div id="addRuangCustomWrap" style="display:none" class="form-group"><label>Nama Ruang</label><input type="text" id="addRuangCustom"></div>
+            <div class="form-group"><label>Kegiatan</label><input type="text" id="addKegiatan" placeholder="Kegiatan / mata kuliah"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Keterangan</label><select id="addKeterangan"><option value="">—</option><option value="pindah">Pindah</option><option value="tambah">Tambah</option><option value="batal">Batal</option></select></div>
+                <div class="form-group"><label>Status</label><select id="addStatus"><option value="">Normal</option><option value="ulang">Ulang (Mingguan)</option></select></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('addModal')">Batal</button>
+            <button class="btn btn-primary" id="saveAddBtn" onclick="saveAdd()">➕ Tambahkan</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ DELETE MODAL ═══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:420px">
+        <div class="modal-header"><h2>⚠️ Hapus Data</h2><button class="modal-close" onclick="closeModal('deleteModal')">&times;</button></div>
+        <div class="modal-body">
+            <p style="font-size:.9rem;margin-bottom:1rem;color:var(--text-secondary)">Data yang dihapus tidak bisa dikembalikan. Yakin?</p>
+            <div id="deletePreview" style="background:var(--surface-2);padding:.85rem;border-radius:var(--radius);font-size:.82rem;font-family:'JetBrains Mono',monospace;border-left:3px solid var(--danger)"></div>
+            <input type="hidden" id="deleteRowIndex">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Batal</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">🗑️ Hapus</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  KONFIGURASI
+// ══════════════════════════════════════════════
+// GAS URL — deploy dengan akses "Anyone" di Google Apps Script
+// URL ini mengandung token acak, jadi tidak bisa ditebak orang lain
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let allData = [];
+let filteredData = [];
+let currentFilter = 'all';
+
+// ══════════════════════════════════════════════
+//  SUPABASE AUTH
+// ══════════════════════════════════════════════
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+    errEl.style.display = 'none';
+
+    if (!supabaseReady) {
+      errEl.innerHTML = '⚠️ Supabase belum dikonfigurasi.<br>Buka file <b>admin.html</b>, ganti <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> dengan nilai dari Supabase Dashboard → Settings → API.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '🔐 Login';
+      return;
+    }
+
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        showDashboard(data.user);
+    } catch (err) {
+        errEl.textContent = err.message || 'Login gagal. Periksa email & password.';
+        errEl.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = '🔐 Login';
+}
+
+async function handleLogout() {
+    await sb.auth.signOut();
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('gateScreen').style.display = 'flex';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+}
+
+function showDashboard(user) {
+    document.getElementById('gateScreen').style.display = 'none';
+    document.getElementById('dashboard').classList.add('active');
+    const name = (user.user_metadata && user.user_metadata.full_name) || user.email || 'Admin';
+    document.getElementById('currentUser').textContent = name;
+    loadData();
+}
+
+// Check existing session on load
+(async function init() {
+    // Login form selalu tampil dulu
+    // Supabase check session di background
+    if (!supabaseReady) {
+        console.warn('Supabase not configured. Login form shown.');
+        return;
+    }
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            showDashboard(session.user);
+        }
+
+        // Listen for auth changes (token refresh, logout from another tab, etc.)
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                showDashboard(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                document.getElementById('dashboard').classList.remove('active');
+                document.getElementById('gateScreen').style.display = 'flex';
+            }
+        });
+    } catch (err) {
+        console.error('Session check error:', err);
+    }
+})();
+
+// ══════════════════════════════════════════════
+//  API — langsung ke GAS (deployed dengan akses "Anyone")
+// ══════════════════════════════════════════════
+async function api(action, params = {}) {
+    const url = new URL(GAS_URL);
+    url.searchParams.set('action', action);
+    Object.keys(params).forEach(k => {
+        if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+            url.searchParams.set(k, params[k]);
+        }
+    });
+
+    // Coba langsung dulu, fallback ke CORS proxy
+    let text;
+    try {
+        const res = await fetch(url.toString());
+        if (res.ok) {
+            text = await res.text();
+        }
+    } catch (_) { /* CORS blocked, fallback */ }
+
+    if (!text) {
+        const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
+        const res = await fetch(proxyUrl);
+        text = await res.text();
+    }
+
+    try { return JSON.parse(text); }
+    catch(e) { return { success: false, error: 'Invalid response: ' + text.substring(0, 200) }; }
+}
+
+// ══════════════════════════════════════════════
+//  LOAD DATA
+// ══════════════════════════════════════════════
+async function loadData() {
+    document.getElementById('tableLoading').classList.add('active');
+    try {
+        const res = await api('getData');
+        if (res.success) {
+            allData = res.data;
+            applyFilters();
+            updateStats();
+        } else {
+            toast('Gagal: ' + (res.error || ''), 'error');
+        }
+    } catch (e) {
+        toast('Gagal terhubung: ' + e.message, 'error');
+    }
+    document.getElementById('tableLoading').classList.remove('active');
+}
+
+// ══════════════════════════════════════════════
+//  FILTER & SEARCH
+// ══════════════════════════════════════════════
+function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    filteredData = allData.filter(row => {
+        if (currentFilter !== 'all') {
+            const ruang = (row.Ruang || '').toLowerCase();
+            const ket = (row.Keterangan || '').toLowerCase();
+            if (['sinyal','data','musiq','multimedia'].includes(currentFilter) && !ruang.includes(currentFilter)) return false;
+            if (currentFilter === 'batal' && ket !== 'batal') return false;
+            if (currentFilter === 'pindah' && ket !== 'pindah') return false;
+        }
+        if (q) return Object.values(row).some(v => String(v).toLowerCase().includes(q));
+        return true;
+    });
+    renderTable();
+}
+
+// ══════════════════════════════════════════════
+//  RENDER TABLE
+// ══════════════════════════════════════════════
+function renderTable() {
+    const tb = document.getElementById('tableBody');
+    if (!filteredData.length) {
+        tb.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada data</p></td></tr>';
+        return;
+    }
+    tb.innerHTML = filteredData.map(r => {
+        const ri = r._rowIndex;
+        const labC = labClass(r.Ruang);
+        const sTag = keteranganTag(r.Keterangan);
+        const sBadge = statusBadge(r.Status);
+        return `<tr>
+            <td class="col-row-num">${ri}</td>
+            <td style="white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:.78rem">${r.Tanggal||'—'}</td>
+            <td>${r.Hari||'—'}</td>
+            <td style="white-space:nowrap">${r.Sesi||'?'}</td>
+            <td><span class="tag ${labC}">${r.Ruang||'—'}</span></td>
+            <td>${r.Pengajar||'<span style="color:var(--text-muted)">—</span>'}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${r.Kegiatan||'—'}</td>
+            <td>${sTag}</td>
+            <td>${sBadge}</td>
+            <td class="col-actions"><div class="action-btns">
+                <button class="btn btn-secondary btn-icon" title="Edit" onclick="openEditModal(${ri})">✏️</button>
+                <button class="btn btn-danger btn-icon" title="Hapus" onclick="openDeleteModal(${ri})">🗑️</button>
+            </div></td>
+        </tr>`;
+    }).join('');
+}
+
+function labClass(l){if(!l)return'';const n=l.toLowerCase();if(n.includes('sinyal'))return'tag-lab-sinyal';if(n.includes('data'))return'tag-lab-data';if(n.includes('musiq'))return'tag-lab-musiq';if(n.includes('multimedia'))return'tag-lab-multimedia';return''}
+function keteranganTag(k){if(!k)return'—';const c=k.toLowerCase().trim();if(c==='pindah')return'<span class="tag tag-status-pindah">Pindah</span>';if(c==='tambah')return'<span class="tag tag-status-tambah">Tambah</span>';if(c==='batal')return'<span class="tag tag-status-batal">Batal</span>';return k}
+function statusBadge(s){if(!s)return'<span style="color:var(--text-muted)">—</span>';if(s.toLowerCase().trim()==='ulang')return'<span class="tag tag-status-ulang">⟳ Ulang</span>';return s}
+
+// ══════════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════════
+function updateStats(){
+    document.getElementById('statTotal').textContent=allData.length;
+    const labs=[...new Set(allData.map(r=>(r.Ruang||'').trim()).filter(Boolean))];
+    document.getElementById('statLabs').textContent=labs.length;
+    document.getElementById('statLabsSub').textContent=labs.join(', ');
+    const p=[...new Set(allData.map(r=>(r.Pengajar||'').trim()).filter(Boolean))];
+    document.getElementById('statPengajar').textContent=p.length;
+    const now=new Date();
+    document.getElementById('statLastUpdate').textContent=now.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+// ══════════════════════════════════════════════
+//  RUANG SELECT HELPER
+// ══════════════════════════════════════════════
+function setupRuang(selId,wrapId){
+    document.getElementById(selId).addEventListener('change',function(){
+        document.getElementById(wrapId).style.display=this.value==='custom'?'block':'none';
+    });
+}
+function getRuang(selId,customId){
+    const s=document.getElementById(selId);
+    return s.value==='custom'?document.getElementById(customId).value.trim():s.value;
+}
+function setRuang(selId,wrapId,customId,val){
+    const s=document.getElementById(selId);
+    if(['Lab Sinyal','Lab Data','Lab Musiq','Lab Multimedia'].includes(val)){s.value=val;document.getElementById(wrapId).style.display='none'}
+    else if(val){s.value='custom';document.getElementById(customId).value=val;document.getElementById(wrapId).style.display='block'}
+    else{s.value='Lab Sinyal';document.getElementById(wrapId).style.display='none'}
+}
+
+// Helper: konversi YYYY-MM-DD atau DD/MM/YYYY → nama hari
+function getHariFromDate(str){
+    if(!str)return'';
+    const clean=str.split(' ')[0].trim();
+    let yyyy,mm,dd;
+    if(clean.includes('-')){
+        // YYYY-MM-DD
+        const parts=clean.split('-');
+        if(parts.length<3)return'';
+        yyyy=parseInt(parts[0]);mm=parseInt(parts[1]);dd=parseInt(parts[2]);
+    } else {
+        // DD/MM/YYYY or M/D/YYYY
+        const parts=clean.split('/');
+        if(parts.length<3)return'';
+        const a=parseInt(parts[0]),b=parseInt(parts[1]);
+        yyyy=parseInt(parts[2]);
+        if(a>12&&b<=12){dd=a;mm=b}
+        else if(b>12&&a<=12){dd=b;mm=a}
+        else{dd=a;mm=b}
+    }
+    const d=new Date(yyyy,mm-1,dd);
+    return['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][d.getDay()]||'';
+}
+
+// Auto-update Hari saat tanggal berubah
+function setupTanggalAutoHari(tanggalId, hariId){
+    const el=document.getElementById(tanggalId);
+    el.addEventListener('input',()=>{
+        document.getElementById(hariId).value=getHariFromDate(el.value);
+    });
+}
+
+// ══════════════════════════════════════════════
+//  EDIT
+// ══════════════════════════════════════════════
+function openEditModal(ri){
+    const r=allData.find(x=>x._rowIndex===ri);
+    if(!r){toast('Data tidak ditemukan','error');return}
+    document.getElementById('editRowIndex').value=ri;
+    // Convert DD/MM/YYYY → YYYY-MM-DD for native date input
+    let tglVal = r.Tanggal || '';
+    if(tglVal && tglVal.includes('/')){
+        const parts = tglVal.split('/');
+        if(parts.length >= 3){
+            // Smart detect: M/D or D/M
+            const a=parseInt(parts[0]),b=parseInt(parts[1]),yyyy=parseInt(parts[2]);
+            let dd,mm;
+            if(a>12&&b<=12){dd=a;mm=b}
+            else if(b>12&&a<=12){dd=b;mm=a}
+            else{dd=a;mm=b} // assume DD/MM
+            tglVal = `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+        }
+    }
+    document.getElementById('editTanggal').value=tglVal;
+    document.getElementById('editHari').value=r.Hari||'';
+    // Match Sesi value — handle both formats
+    const sesiEl=document.getElementById('editSesi');
+    const sesiVal=r.Sesi||'';
+    let found=false;
+    for(let o of sesiEl.options){if(o.value===sesiVal||o.text===sesiVal){sesiEl.value=o.value;found=true;break}}
+    if(!found){const m=sesiVal.match(/(\d)/);if(m){for(let o of sesiEl.options){if(o.value.startsWith('Sesi '+m[1])){sesiEl.value=o.value;break}}}}
+    setRuang('editRuang','editRuangCustomWrap','editRuangCustom',r.Ruang||'');
+    document.getElementById('editPengajar').value=r.Pengajar||'';
+    document.getElementById('editKegiatan').value=r.Kegiatan||'';
+    document.getElementById('editKeterangan').value=r.Keterangan||'';
+    document.getElementById('editStatus').value=r.Status||'';
+    document.getElementById('editModal').classList.add('active');
+}
+
+async function saveEdit(){
+    const ri=document.getElementById('editRowIndex').value;
+    const btn=document.getElementById('saveEditBtn');
+    btn.disabled=true;btn.textContent='Menyimpan...';
+    try{
+        const res=await api('updateRow',{
+            rowIndex:ri,
+            Tanggal:document.getElementById('editTanggal').value,
+            Sesi:document.getElementById('editSesi').value,
+            Ruang:getRuang('editRuang','editRuangCustom'),
+            Pengajar:document.getElementById('editPengajar').value,
+            Kegiatan:document.getElementById('editKegiatan').value,
+            Keterangan:document.getElementById('editKeterangan').value,
+            Status:document.getElementById('editStatus').value
+        });
+        if(res.success){toast('Data diupdate!','success');closeModal('editModal');loadData()}
+        else toast('Gagal: '+(res.error||''),'error')
+    }catch(e){toast('Error: '+e.message,'error')}
+    btn.disabled=false;btn.textContent='💾 Simpan';
+}
+
+function quickDeleteFromEdit(){const ri=document.getElementById('editRowIndex').value;closeModal('editModal');openDeleteModal(parseInt(ri))}
+
+// ══════════════════════════════════════════════
+//  ADD
+// ══════════════════════════════════════════════
+function openAddModal(){
+    const d=new Date();
+    const yyyy=d.getFullYear();
+    const mm=String(d.getMonth()+1).padStart(2,'0');
+    const dd=String(d.getDate()).padStart(2,'0');
+    document.getElementById('addTanggal').value=`${yyyy}-${mm}-${dd}`;
+    document.getElementById('addSesi').value='Sesi 1 (08.30 - 10.30)';
+    setRuang('addRuang','addRuangCustomWrap','addRuangCustom','Lab Sinyal');
+    document.getElementById('addPengajar').value='';
+    document.getElementById('addKegiatan').value='';
+    document.getElementById('addKeterangan').value='';
+    document.getElementById('addStatus').value='';
+    document.getElementById('addModal').classList.add('active');
+}
+
+async function saveAdd(){
+    const tgl=document.getElementById('addTanggal').value.trim();
+    if(!tgl){toast('Tanggal wajib diisi!','error');return}
+    const btn=document.getElementById('saveAddBtn');
+    btn.disabled=true;btn.textContent='Menyimpan...';
+    try{
+        const res=await api('addRow',{
+            Tanggal:tgl,
+            Sesi:document.getElementById('addSesi').value,
+            Ruang:getRuang('addRuang','addRuangCustom'),
+            Pengajar:document.getElementById('addPengajar').value,
+            Kegiatan:document.getElementById('addKegiatan').value,
+            Keterangan:document.getElementById('addKeterangan').value,
+            Status:document.getElementById('addStatus').value
+        });
+        if(res.success){toast('Jadwal ditambahkan!','success');closeModal('addModal');loadData()}
+        else toast('Gagal: '+(res.error||''),'error')
+    }catch(e){toast('Error: '+e.message,'error')}
+    btn.disabled=false;btn.textContent='➕ Tambahkan';
+}
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function openDeleteModal(ri){
+    const r=allData.find(x=>x._rowIndex===ri);
+    if(!r){toast('Data tidak ditemukan','error');return}
+    document.getElementById('deleteRowIndex').value=ri;
+    document.getElementById('deletePreview').innerHTML=`<strong>Baris ${ri}</strong><br>📅 ${r.Tanggal||'—'} (${r.Hari||'?'}) | ${r.Sesi||'?'}<br>🏷️ ${r.Ruang||'—'} | ${r.Pengajar||'—'}<br>📝 ${r.Kegiatan||'—'}`;
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+async function confirmDelete(){
+    const ri=document.getElementById('deleteRowIndex').value;
+    const btn=document.getElementById('confirmDeleteBtn');
+    btn.disabled=true;btn.textContent='Menghapus...';
+    try{
+        const res=await api('deleteRow',{rowIndex:ri});
+        if(res.success){toast('Data dihapus!','success');closeModal('deleteModal');loadData()}
+        else toast('Gagal: '+(res.error||''),'error')
+    }catch(e){toast('Error: '+e.message,'error')}
+    btn.disabled=false;btn.textContent='🗑️ Hapus';
+}
+
+// ══════════════════════════════════════════════
+//  UTIL
+// ══════════════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+
+function toast(msg,type='info'){
+    const c=document.getElementById('toastContainer');
+    const icons={success:'✅',error:'❌',info:'ℹ️'};
+    const el=document.createElement('div');
+    el.className=`toast toast-${type}`;
+    el.innerHTML=`<span>${icons[type]||''}</span><span>${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(100%)';el.style.transition='all .3s';setTimeout(()=>el.remove(),300)},4000);
+}
+
+// Keyboard: ESC to close modals
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['editModal','addModal','deleteModal'].forEach(closeModal)});
+
+// Click backdrop to close
+['editModal','addModal','deleteModal'].forEach(id=>{
+    document.getElementById(id).addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))closeModal(id)});
+});
+
+// Setup ruang selects
+setupRuang('editRuang','editRuangCustomWrap');
+setupRuang('addRuang','addRuangCustomWrap');
+
+// Setup tanggal → hari auto
+setupTanggalAutoHari('editTanggal','editHari');
+</script>
+</body>
+</html>
