@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (dom.weekInfo) {
             dom.weekInfo.innerHTML = weekDataCount > 0
-                ? `<span>${weekDataCount} jadwal</span><span>${pengajarInWeek.length} pengajar</span>`
+                ? `<span>${weekDataCount} jadwal</span>  <span>${pengajarInWeek.length} pengajar</span>`
                 : '';
         }
 
