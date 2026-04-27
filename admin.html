@@ -68,6 +68,7 @@
         .form-group input,.form-group select{width:100%;padding:.65rem .85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;outline:none}
         .form-group input:focus,.form-group select:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
         .login-error{background:var(--danger-bg);color:var(--danger);padding:.6rem .85rem;border-radius:var(--radius);font-size:.82rem;margin-bottom:1rem;display:none}
+        .login-success{background:rgba(34,197,94,.1);color:#16a34a;padding:.6rem .85rem;border-radius:var(--radius);font-size:.82rem;margin-bottom:1rem;display:none}
         .hint{font-size:.72rem;color:var(--text-muted);margin-top:1rem}
         .gate-card a{color:var(--accent);text-decoration:none;font-size:.78rem}
         .gate-card a:hover{text-decoration:underline}
@@ -256,7 +257,47 @@
             <button type="submit" class="btn btn-primary" id="loginBtn">🔐 Login</button>
         </form>
         <p class="hint">Hanya admin yang terdaftar di Supabase yang bisa mengakses.</p>
-        <p style="margin-top:.75rem"><a href="index.html">← Kembali ke Jadwal</a></p>
+        <p style="margin-top:.75rem">
+            <a href="#" onclick="showResetPassword(event)" style="font-size:.85rem">🔑 Lupa Password?</a>
+            &nbsp;·&nbsp;
+            <a href="index.html">← Kembali ke Jadwal</a>
+        </p>
+    </div>
+</div>
+
+<!-- ═══════════════ RESET PASSWORD MODAL ═══════════════ -->
+<div class="gate-screen" id="resetScreen" style="display:none">
+    <div class="gate-card">
+        <div class="logo">🔑</div>
+        <h1>Reset Password</h1>
+        <p class="subtitle" id="resetSubtitle">Masukkan email Anda untuk menerima link reset password.</p>
+
+        <!-- Step 1: Request Reset -->
+        <div id="resetRequestForm">
+            <div class="form-group">
+                <label for="resetEmail">Email</label>
+                <input type="email" id="resetEmail" placeholder="admin@kampus.ac.id" required autocomplete="email">
+            </div>
+            <div class="login-error" id="resetError" style="display:none"></div>
+            <div class="login-success" id="resetSuccess" style="display:none"></div>
+            <button class="btn btn-primary" id="resetBtn" onclick="handleResetRequest()">📧 Kirim Link Reset</button>
+        </div>
+
+        <!-- Step 2: Set New Password (shown after clicking email link) -->
+        <div id="resetNewPasswordForm" style="display:none">
+            <div class="form-group">
+                <label for="newPassword">Password Baru</label>
+                <input type="password" id="newPassword" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Konfirmasi Password</label>
+                <input type="password" id="confirmPassword" placeholder="Ketik ulang password" required autocomplete="new-password">
+            </div>
+            <div class="login-error" id="newPasswordError" style="display:none"></div>
+            <button class="btn btn-primary" id="newPasswordBtn" onclick="handleSetNewPassword()">✅ Simpan Password Baru</button>
+        </div>
+
+        <p style="margin-top:.75rem"><a href="#" onclick="showLogin(event)">← Kembali ke Login</a></p>
     </div>
 </div>
 
@@ -608,6 +649,128 @@ async function handleLogin(e) {
     btn.textContent = '🔐 Login';
 }
 
+// ─── RESET PASSWORD ───
+
+function showResetPassword(e) {
+    if (e) e.preventDefault();
+    document.getElementById('gateScreen').style.display = 'none';
+    document.getElementById('resetScreen').style.display = 'flex';
+    document.getElementById('resetRequestForm').style.display = 'block';
+    document.getElementById('resetNewPasswordForm').style.display = 'none';
+    document.getElementById('resetSubtitle').textContent = 'Masukkan email Anda untuk menerima link reset password.';
+    document.getElementById('resetError').style.display = 'none';
+    document.getElementById('resetSuccess').style.display = 'none';
+}
+
+function showLogin(e) {
+    if (e) e.preventDefault();
+    document.getElementById('resetScreen').style.display = 'none';
+    document.getElementById('gateScreen').style.display = 'flex';
+}
+
+async function handleResetRequest() {
+    const email = document.getElementById('resetEmail').value.trim();
+    const errEl = document.getElementById('resetError');
+    const successEl = document.getElementById('resetSuccess');
+    const btn = document.getElementById('resetBtn');
+
+    errEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!email) {
+        errEl.textContent = 'Email wajib diisi.';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (!supabaseReady) {
+        errEl.textContent = 'Supabase belum dikonfigurasi.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Mengirim...';
+
+    try {
+        // redirectTo harus sesuai dengan yang di-set di Supabase Dashboard
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset-password.html'
+        });
+        if (error) throw error;
+
+        successEl.innerHTML = '✅ Link reset password sudah dikirim ke <strong>' + email + '</strong>.<br>Cek inbox (dan folder spam) Anda.';
+        successEl.style.display = 'block';
+    } catch (err) {
+        errEl.textContent = err.message || 'Gagal mengirim email reset.';
+        errEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📧 Kirim Link Reset';
+}
+
+async function handleSetNewPassword() {
+    const newPw = document.getElementById('newPassword').value;
+    const confirmPw = document.getElementById('confirmPassword').value;
+    const errEl = document.getElementById('newPasswordError');
+    const btn = document.getElementById('newPasswordBtn');
+
+    errEl.style.display = 'none';
+
+    if (!newPw || newPw.length < 6) {
+        errEl.textContent = 'Password minimal 6 karakter.';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (newPw !== confirmPw) {
+        errEl.textContent = 'Password tidak cocok.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    try {
+        const { error } = await sb.auth.updateUser({ password: newPw });
+        if (error) throw error;
+
+        // Berhasil, redirect ke login
+        alert('✅ Password berhasil diubah! Silakan login dengan password baru.');
+        document.getElementById('resetScreen').style.display = 'none';
+        document.getElementById('gateScreen').style.display = 'flex';
+    } catch (err) {
+        errEl.textContent = err.message || 'Gagal mengubah password.';
+        errEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = '✅ Simpan Password Baru';
+}
+
+// Check if this is a password recovery callback
+async function checkPasswordRecovery() {
+    if (!supabaseReady) return;
+
+    // Check URL hash for recovery token
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+
+    if (type === 'recovery') {
+        // Show the new password form
+        document.getElementById('gateScreen').style.display = 'none';
+        document.getElementById('resetScreen').style.display = 'flex';
+        document.getElementById('resetRequestForm').style.display = 'none';
+        document.getElementById('resetNewPasswordForm').style.display = 'block';
+        document.getElementById('resetSubtitle').textContent = 'Masukkan password baru Anda.';
+
+        // Clean up URL
+        history.replaceState(null, '', window.location.pathname);
+    }
+}
+
+// ─── END RESET PASSWORD ───
+
 async function handleLogout() {
     await sb.auth.signOut();
     document.getElementById('dashboard').classList.remove('active');
@@ -627,6 +790,7 @@ function showDashboard(user) {
 (async function init() {
     if (!supabaseReady) { console.warn('Supabase not configured.'); return; }
     try {
+        await checkPasswordRecovery(); // Check if this is a reset callback
         const { data: { session } } = await sb.auth.getSession();
         if (session) showDashboard(session.user);
         sb.auth.onAuthStateChange((event, session) => {
