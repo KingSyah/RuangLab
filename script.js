@@ -99,8 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!itemDate || isNaN(itemDate.getTime())) return false;
             const status = (item.Status || '').toLowerCase().trim();
 
-            // ulang/mingguan/bulanan — always visible
-            if (status === 'ulang' || status === 'mingguan' || status === 'bulanan') return true;
+            if (status === 'ulang') return true; // always visible
+            if (status === 'mingguan') {
+                const rangeEnd = new Date(itemDate);
+                rangeEnd.setDate(itemDate.getDate() + 6);
+                return rangeEnd >= weekStart && itemDate <= weekEnd;
+            }
+            if (status === 'bulanan') {
+                return (itemDate.getMonth() === weekStart.getMonth() && itemDate.getFullYear() === weekStart.getFullYear())
+                    || (itemDate.getMonth() === weekEnd.getMonth() && itemDate.getFullYear() === weekEnd.getFullYear());
+            }
 
             return itemDate >= weekStart && itemDate <= weekEnd;
         }).length;
@@ -223,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Check if an item should appear on a specific date in the current week.
-     * Handles: normal (exact date), ulang (same day-of-week), mingguan (within 1-week range), bulanan (same month).
+     * Handles: normal (exact date), ulang (same day-of-week), mingguan (7 days from start), bulanan (entire month).
      */
     const matchesDate = (item, checkDate, weekStart) => {
         if (!item.Tanggal) return false;
@@ -234,19 +242,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switch (status) {
             case 'ulang':
-                // Repeat every week on the same day-of-week
                 return itemDate.getDay() === checkDate.getDay();
 
-            case 'mingguan':
-                // Show on the specific date only (1 week worth of entries already created)
-                return itemDate.toDateString() === checkDate.toDateString();
+            case 'mingguan': {
+                const mEnd = new Date(itemDate);
+                mEnd.setDate(itemDate.getDate() + 6);
+                mEnd.setHours(23, 59, 59);
+                return checkDate >= itemDate && checkDate <= mEnd;
+            }
 
             case 'bulanan':
-                // Show on the specific date only (1 month worth of entries already created)
-                return itemDate.toDateString() === checkDate.toDateString();
+                return itemDate.getMonth() === checkDate.getMonth()
+                    && itemDate.getFullYear() === checkDate.getFullYear();
 
             default:
-                // Normal: exact date match
                 return itemDate.toDateString() === checkDate.toDateString();
         }
     };
@@ -292,9 +301,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = (item.Status || '').toLowerCase().trim();
 
             if (status === 'ulang') return true; // always show, filtered per cell later
-            if (status === 'mingguan' || status === 'bulanan') {
-                // Show if item's date falls within this week
-                return itemDate >= weekStartDate && itemDate <= weekEndDate;
+            if (status === 'mingguan') {
+                // Show if the 7-day range (itemDate → itemDate+6) overlaps with this week
+                const rangeEnd = new Date(itemDate);
+                rangeEnd.setDate(itemDate.getDate() + 6);
+                return rangeEnd >= weekStartDate && itemDate <= weekEndDate;
+            }
+            if (status === 'bulanan') {
+                // Show if item's month/year matches any date in this week
+                const weekMonth = weekStartDate.getMonth();
+                const weekYear = weekStartDate.getFullYear();
+                const endMonth = weekEndDate.getMonth();
+                const endYear = weekEndDate.getFullYear();
+                return (itemDate.getMonth() === weekMonth && itemDate.getFullYear() === weekYear)
+                    || (itemDate.getMonth() === endMonth && itemDate.getFullYear() === endYear);
             }
             return itemDate >= weekStartDate && itemDate <= weekEndDate;
         });
