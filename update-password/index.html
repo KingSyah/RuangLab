@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Password - RuangLab</title>
+    <link rel="stylesheet" href="../style.css"> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container" style="max-width: 400px; margin-top: 100px;">
+        <h2>Update Password Baru</h2>
+        <p>Silakan masukkan password baru Anda di bawah ini.</p>
+        
+        <div id="form-container">
+            <input type="password" id="new-password" placeholder="Password Baru" required style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <button id="btn-update" style="width: 100%; padding: 10px; background-color: #2563eb; color: white; border: none; cursor: pointer;">
+                Simpan Password Baru
+            </button>
+        </div>
+
+        <div id="message" style="margin-top: 20px; font-weight: bold; display: none;"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
