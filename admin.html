@@ -9,16 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- ═══════════════ SUPABASE ═══════════════ -->
-    <!-- ⚠️ WAJIB GANTI: ambil dari Supabase Dashboard → Settings → API -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
-      // ┌──────────────────────────────────────────────────┐
-      // │  GANTI 2 BARIS DI BAWAH INI                      │
-      // │                                                    │
-      // │  1. Buka supabase.com → Dashboard → Settings → API │
-      // │  2. Copy Project URL → paste ke SUPABASE_URL       │
-      // │  3. Copy "anon public" key → paste ke ANON_KEY     │
-      // └──────────────────────────────────────────────────┘
       const SUPABASE_URL = 'https://qfbqoyyatqjgraybkhcr.supabase.co';
       const SUPABASE_ANON_KEY = 'sb_publishable_gpKMwLHoTavSvhaBz70MJQ_OsBo_M1P';
 
@@ -57,6 +49,8 @@
             --danger-bg: rgba(239,68,68,0.12);
             --warning: #f59e0b;
             --warning-bg: rgba(245,158,11,0.12);
+            --info: #3b82f6;
+            --info-bg: rgba(59,130,246,0.12);
             --radius: 8px;
             --radius-lg: 12px;
         }
@@ -71,8 +65,8 @@
         .gate-card .subtitle{font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem}
         .form-group{text-align:left;margin-bottom:1rem}
         .form-group label{display:block;font-size:.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.04em}
-        .form-group input{width:100%;padding:.65rem .85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;outline:none}
-        .form-group input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+        .form-group input,.form-group select{width:100%;padding:.65rem .85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;outline:none}
+        .form-group input:focus,.form-group select:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
         .login-error{background:var(--danger-bg);color:var(--danger);padding:.6rem .85rem;border-radius:var(--radius);font-size:.82rem;margin-bottom:1rem;display:none}
         .hint{font-size:.72rem;color:var(--text-muted);margin-top:1rem}
         .gate-card a{color:var(--accent);text-decoration:none;font-size:.78rem}
@@ -90,12 +84,27 @@
         .user-info strong{color:var(--text)}
         .main-content{padding:1.5rem;max-width:1400px;margin:0 auto}
 
+        /* ── TABS ────────────────────── */
+        .tab-bar{display:flex;gap:2px;background:var(--surface-2);border-radius:var(--radius);padding:3px;margin-bottom:1.5rem;width:fit-content}
+        .tab-btn{padding:.5rem 1rem;border:none;background:transparent;color:var(--text-secondary);font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;border-radius:6px;transition:all .15s}
+        .tab-btn:hover{color:var(--text)}
+        .tab-btn.active{background:var(--accent);color:#fff}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+
         /* ── STATS ────────────────────── */
-        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem}
-        .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem}
-        .stat-card .stat-label{font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
-        .stat-card .stat-value{font-size:1.75rem;font-weight:700;margin-top:.25rem}
-        .stat-card .stat-sub{font-size:.72rem;color:var(--text-muted);margin-top:.15rem}
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+        .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;position:relative;overflow:hidden}
+        .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+        .stat-card.stat-total::before{background:var(--accent)}
+        .stat-card.stat-labs::before{background:var(--success)}
+        .stat-card.stat-pengajar::before{background:var(--warning)}
+        .stat-card.stat-mingguan::before{background:var(--info)}
+        .stat-card.stat-bulanan::before{background:#a855f7}
+        .stat-card.stat-batal::before{background:var(--danger)}
+        .stat-card .stat-label{font-size:.7rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+        .stat-card .stat-value{font-size:1.5rem;font-weight:700;margin-top:.25rem}
+        .stat-card .stat-sub{font-size:.68rem;color:var(--text-muted);margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
         /* ── TOOLBAR ────────────────────── */
         .toolbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
@@ -116,7 +125,9 @@
         .table-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;position:relative}
         .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
         table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:960px}
-        thead th{background:var(--surface-2);padding:.7rem .85rem;text-align:left;font-weight:700;font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap}
+        thead th{background:var(--surface-2);padding:.7rem .85rem;text-align:left;font-weight:700;font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+        thead th:hover{color:var(--text)}
+        thead th .sort-icon{margin-left:4px;font-size:.6rem}
         tbody td{padding:.65rem .85rem;border-bottom:1px solid var(--border);vertical-align:middle}
         tbody tr:last-child td{border-bottom:none}
         tbody tr{transition:background .1s}
@@ -133,11 +144,13 @@
         .tag-status-pindah{background:var(--warning-bg);color:var(--warning)}
         .tag-status-tambah{background:rgba(59,130,246,.15);color:#3b82f6}
         .tag-status-ulang{background:var(--success-bg);color:var(--success)}
+        .tag-status-mingguan{background:rgba(59,130,246,.15);color:#3b82f6}
+        .tag-status-bulanan{background:rgba(168,85,247,.15);color:#a855f7}
 
         /* ── MODAL ────────────────────── */
         .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:1rem}
         .modal-overlay.active{display:flex}
-        .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:modalIn .15s ease-out}
+        .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:modalIn .15s ease-out}
         @keyframes modalIn{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
         .modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
         .modal-header h2{font-size:1rem;font-weight:700}
@@ -147,6 +160,20 @@
         .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem}
         .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .form-hint{font-size:.72rem;color:var(--text-muted);margin-top:.25rem}
+        .form-separator{border:none;border-top:1px solid var(--border);margin:1rem 0}
+        .form-section-title{font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+
+        /* Day checkboxes */
+        .days-grid{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem}
+        .day-check{display:flex;align-items:center;gap:.35rem}
+        .day-check input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+        .day-check label{font-size:.8rem;color:var(--text-secondary);cursor:pointer;user-select:none}
+        .day-check input:checked+label{color:var(--accent);font-weight:600}
+
+        /* Bulk preview */
+        .bulk-preview{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;margin-top:.75rem;font-size:.78rem;color:var(--text-secondary);max-height:120px;overflow-y:auto}
+        .bulk-preview strong{color:var(--text)}
+        .bulk-preview .count{color:var(--accent);font-weight:700;font-size:.85rem}
 
         /* ── BUTTONS ────────────────────── */
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.65rem 1.25rem;border:none;border-radius:var(--radius);font-size:.85rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -159,8 +186,11 @@
         .btn-danger:hover:not(:disabled){background:var(--danger);color:#fff}
         .btn-success{background:var(--success-bg);color:var(--success);border:1px solid transparent}
         .btn-success:hover:not(:disabled){background:var(--success);color:#fff}
+        .btn-info{background:var(--info-bg);color:var(--info);border:1px solid transparent}
+        .btn-info:hover:not(:disabled){background:var(--info);color:#fff}
         .btn-sm{padding:.4rem .75rem;font-size:.78rem}
         .btn-icon{width:32px;height:32px;padding:0;border-radius:6px;font-size:.9rem}
+        .btn-group{display:flex;gap:.35rem}
 
         /* ── TOAST ────────────────────── */
         .toast-container{position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem}
@@ -194,6 +224,8 @@
             .modal{margin:.5rem;max-height:85vh}
             .modal-body{padding:1rem}
             table{min-width:700px}
+            .tab-bar{width:100%;justify-content:center}
+            .days-grid{justify-content:center}
         }
         @media(max-width:480px){
             .stats-row{grid-template-columns:1fr}
@@ -246,47 +278,184 @@
     <div class="main-content">
         <!-- Stats -->
         <div class="stats-row">
-            <div class="stat-card"><div class="stat-label">Total Jadwal</div><div class="stat-value" id="statTotal">—</div></div>
-            <div class="stat-card"><div class="stat-label">Laboratorium</div><div class="stat-value" id="statLabs">—</div><div class="stat-sub" id="statLabsSub"></div></div>
-            <div class="stat-card"><div class="stat-label">Pengajar</div><div class="stat-value" id="statPengajar">—</div></div>
-            <div class="stat-card"><div class="stat-label">Update</div><div class="stat-value" style="font-size:1rem;margin-top:.5rem" id="statLastUpdate">—</div></div>
+            <div class="stat-card stat-total"><div class="stat-label">Total Jadwal</div><div class="stat-value" id="statTotal">—</div></div>
+            <div class="stat-card stat-labs"><div class="stat-label">Laboratorium</div><div class="stat-value" id="statLabs">—</div><div class="stat-sub" id="statLabsSub"></div></div>
+            <div class="stat-card stat-pengajar"><div class="stat-label">Pengajar</div><div class="stat-value" id="statPengajar">—</div></div>
+            <div class="stat-card stat-mingguan"><div class="stat-label">Mingguan</div><div class="stat-value" id="statMingguan">—</div></div>
+            <div class="stat-card stat-bulanan"><div class="stat-label">Bulanan</div><div class="stat-value" id="statBulanan">—</div></div>
+            <div class="stat-card stat-batal"><div class="stat-label">Dibatalkan</div><div class="stat-value" id="statBatal">—</div></div>
         </div>
 
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="search-box"><input type="text" id="searchInput" placeholder="Cari jadwal..." oninput="applyFilters()"></div>
-                <button class="btn btn-secondary btn-sm" onclick="loadData()">↻ Muat Ulang</button>
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('data',this)">📋 Data</button>
+            <button class="tab-btn" onclick="switchTab('bulk',this)">📦 Bulk Add</button>
+        </div>
+
+        <!-- ═══ TAB: DATA ═══ -->
+        <div class="tab-content active" id="tab-data">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box"><input type="text" id="searchInput" placeholder="Cari jadwal..." oninput="applyFilters()"></div>
+                    <button class="btn btn-secondary btn-sm" onclick="loadData()">↻ Muat Ulang</button>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-info btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Tambah Jadwal</button>
+                </div>
             </div>
-            <div class="toolbar-right">
-                <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Tambah Jadwal</button>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <button class="filter-chip active" onclick="setFilter('all',this)">Semua</button>
+                <button class="filter-chip" onclick="setFilter('sinyal',this)">Lab Sinyal</button>
+                <button class="filter-chip" onclick="setFilter('data',this)">Lab Data</button>
+                <button class="filter-chip" onclick="setFilter('musiq',this)">Lab Musiq</button>
+                <button class="filter-chip" onclick="setFilter('multimedia',this)">Lab Multimedia</button>
+                <button class="filter-chip" onclick="setFilter('ulang',this)">⟳ Ulang</button>
+                <button class="filter-chip" onclick="setFilter('mingguan',this)">📅 Mingguan</button>
+                <button class="filter-chip" onclick="setFilter('bulanan',this)">🗓️ Bulanan</button>
+                <button class="filter-chip" onclick="setFilter('batal',this)">✕ Batal</button>
+                <button class="filter-chip" onclick="setFilter('pindah',this)">↩ Pindah</button>
+                <button class="filter-chip" onclick="setFilter('tambah',this)">＋ Tambah</button>
+            </div>
+
+            <!-- Table -->
+            <div class="table-wrapper" style="position:relative">
+                <div class="loading-overlay" id="tableLoading"><div class="spinner"></div></div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr>
+                            <th class="col-row-num">#</th>
+                            <th onclick="sortBy('Tanggal')">Tanggal <span class="sort-icon">↕</span></th>
+                            <th onclick="sortBy('Hari')">Hari <span class="sort-icon">↕</span></th>
+                            <th onclick="sortBy('Sesi')">Sesi <span class="sort-icon">↕</span></th>
+                            <th onclick="sortBy('Ruang')">Ruang <span class="sort-icon">↕</span></th>
+                            <th onclick="sortBy('Pengajar')">Pengajar <span class="sort-icon">↕</span></th>
+                            <th>Kegiatan</th>
+                            <th>Keterangan</th>
+                            <th onclick="sortBy('Status')">Status <span class="sort-icon">↕</span></th>
+                            <th class="col-actions">Aksi</th>
+                        </tr></thead>
+                        <tbody id="tableBody"><tr><td colspan="10" class="empty-state">Memuat data...</td></tr></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="filter-bar">
-            <button class="filter-chip active" onclick="setFilter('all',this)">Semua</button>
-            <button class="filter-chip" onclick="setFilter('sinyal',this)">Lab Sinyal</button>
-            <button class="filter-chip" onclick="setFilter('data',this)">Lab Data</button>
-            <button class="filter-chip" onclick="setFilter('musiq',this)">Lab Musiq</button>
-            <button class="filter-chip" onclick="setFilter('multimedia',this)">Lab Multimedia</button>
-            <button class="filter-chip" onclick="setFilter('batal',this)">Dibatalkan</button>
-            <button class="filter-chip" onclick="setFilter('pindah',this)">Dipindah</button>
-        </div>
+        <!-- ═══ TAB: BULK ADD ═══ -->
+        <div class="tab-content" id="tab-bulk">
+            <div style="max-width:700px">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem">
+                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem">📦 Tambah Jadwal Massal</h3>
 
-        <!-- Table -->
-        <div class="table-wrapper" style="position:relative">
-            <div class="loading-overlay" id="tableLoading"><div class="spinner"></div></div>
-            <div class="table-scroll">
-                <table>
-                    <thead><tr>
-                        <th class="col-row-num">#</th>
-                        <th>Tanggal</th><th>Hari</th><th>Sesi</th><th>Ruang</th>
-                        <th>Pengajar</th><th>Kegiatan</th><th>Keterangan</th><th>Status</th>
-                        <th class="col-actions">Aksi</th>
-                    </tr></thead>
-                    <tbody id="tableBody"><tr><td colspan="10" class="empty-state">Memuat data...</td></tr></tbody>
-                </table>
+                    <!-- Mode Selection -->
+                    <div class="form-group">
+                        <label>Mode</label>
+                        <select id="bulkMode" onchange="updateBulkUI()">
+                            <option value="minggu">📅 1 Minggu Penuh (7 hari)</option>
+                            <option value="bulan">🗓️ 1 Bulan Penuh</option>
+                            <option value="range">📆 Custom Range</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal Mulai</label>
+                            <input type="date" id="bulkStartDate" onchange="updateBulkPreview()">
+                            <div class="form-hint" id="bulkDateHint">Mulai dari hari Senin</div>
+                        </div>
+                        <div class="form-group" id="bulkEndDateGroup" style="display:none">
+                            <label>Tanggal Akhir</label>
+                            <input type="date" id="bulkEndDate" onchange="updateBulkPreview()">
+                        </div>
+                    </div>
+
+                    <!-- Day Filter -->
+                    <div class="form-group">
+                        <label>Hari yang Dijadwalkan</label>
+                        <div class="days-grid" id="bulkDays">
+                            <div class="day-check"><input type="checkbox" id="day-1" value="1" checked onchange="updateBulkPreview()"><label for="day-1">Sen</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-2" value="2" checked onchange="updateBulkPreview()"><label for="day-2">Sel</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-3" value="3" checked onchange="updateBulkPreview()"><label for="day-3">Rab</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-4" value="4" checked onchange="updateBulkPreview()"><label for="day-4">Kam</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-5" value="5" checked onchange="updateBulkPreview()"><label for="day-5">Jum</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-6" value="6" checked onchange="updateBulkPreview()"><label for="day-6">Sab</label></div>
+                            <div class="day-check"><input type="checkbox" id="day-0" value="0" onchange="updateBulkPreview()"><label for="day-0">Min</label></div>
+                        </div>
+                        <div class="form-hint">Centang hari yang ingin dijadwalkan</div>
+                    </div>
+
+                    <hr class="form-separator">
+                    <div class="form-section-title">📝 Detail Jadwal</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Sesi</label>
+                            <select id="bulkSesi">
+                                <option value="Sesi 1 (08.30 - 10.30)">Sesi 1 (08.30–10.30)</option>
+                                <option value="Sesi 2 (10.45 - 12.30)">Sesi 2 (10.45–12.30)</option>
+                                <option value="Sesi 3 (14.00 - 16.30)">Sesi 3 (14.00–16.30)</option>
+                                <option value="Sesi 4 (16.30 - 18.00)">Sesi 4 (16.30–18.00)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ruang</label>
+                            <select id="bulkRuang" onchange="toggleBulkRuangCustom()">
+                                <option value="Lab Sinyal">Lab Sinyal</option>
+                                <option value="Lab Data">Lab Data</option>
+                                <option value="Lab Musiq">Lab Musiq</option>
+                                <option value="Lab Multimedia">Lab Multimedia</option>
+                                <option value="custom">Manual...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="bulkRuangCustomWrap" style="display:none" class="form-group">
+                        <label>Nama Ruang</label>
+                        <input type="text" id="bulkRuangCustom">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Pengajar</label>
+                            <input type="text" id="bulkPengajar" placeholder="Nama pengajar">
+                        </div>
+                        <div class="form-group">
+                            <label>Kegiatan</label>
+                            <input type="text" id="bulkKegiatan" placeholder="Kegiatan / mata kuliah">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Keterangan</label>
+                            <select id="bulkKeterangan">
+                                <option value="">—</option>
+                                <option value="pindah">Pindah</option>
+                                <option value="tambah">Tambah</option>
+                                <option value="batal">Batal</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="bulkStatus">
+                                <option value="">Normal (1 Hari)</option>
+                                <option value="ulang">⟳ Ulang (Mingguan)</option>
+                                <option value="mingguan">📅 Mingguan (1 Minggu)</option>
+                                <option value="bulanan">🗓️ Bulanan (1 Bulan)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="bulk-preview" id="bulkPreview" style="display:none">
+                        <div id="bulkPreviewContent"></div>
+                    </div>
+
+                    <div style="margin-top:1rem">
+                        <button class="btn btn-primary" id="bulkSubmitBtn" onclick="submitBulk()">📦 Tambahkan Semua</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -313,7 +482,7 @@
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Keterangan</label><select id="editKeterangan"><option value="">—</option><option value="pindah">Pindah</option><option value="tambah">Tambah</option><option value="batal">Batal</option></select></div>
-                <div class="form-group"><label>Status</label><select id="editStatus"><option value="">Normal</option><option value="ulang">Ulang (Mingguan)</option></select></div>
+                <div class="form-group"><label>Status</label><select id="editStatus"><option value="">Normal</option><option value="ulang">⟳ Ulang (Mingguan)</option><option value="mingguan">📅 Mingguan</option><option value="bulanan">🗓️ Bulanan</option></select></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -341,7 +510,7 @@
             <div class="form-group"><label>Kegiatan</label><input type="text" id="addKegiatan" placeholder="Kegiatan / mata kuliah"></div>
             <div class="form-row">
                 <div class="form-group"><label>Keterangan</label><select id="addKeterangan"><option value="">—</option><option value="pindah">Pindah</option><option value="tambah">Tambah</option><option value="batal">Batal</option></select></div>
-                <div class="form-group"><label>Status</label><select id="addStatus"><option value="">Normal</option><option value="ulang">Ulang (Mingguan)</option></select></div>
+                <div class="form-group"><label>Status</label><select id="addStatus"><option value="">Normal</option><option value="ulang">⟳ Ulang (Mingguan)</option><option value="mingguan">📅 Mingguan</option><option value="bulanan">🗓️ Bulanan</option></select></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -373,8 +542,6 @@
 // ══════════════════════════════════════════════
 //  KONFIGURASI
 // ══════════════════════════════════════════════
-// GAS URL — deploy dengan akses "Anyone" di Google Apps Script
-// URL ini mengandung token acak, jadi tidak bisa ditebak orang lain
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
@@ -384,6 +551,27 @@ const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 let allData = [];
 let filteredData = [];
 let currentFilter = 'all';
+let sortField = '';
+let sortDir = 'asc';
+
+const HARI_MAP = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const SESI_OPTIONS = [
+    { value: 'Sesi 1 (08.30 - 10.30)', label: 'Sesi 1 (08.30–10.30)' },
+    { value: 'Sesi 2 (10.45 - 12.30)', label: 'Sesi 2 (10.45–12.30)' },
+    { value: 'Sesi 3 (14.00 - 16.30)', label: 'Sesi 3 (14.00–16.30)' },
+    { value: 'Sesi 4 (16.30 - 18.00)', label: 'Sesi 4 (16.30–18.00)' },
+];
+
+// ══════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════
+function switchTab(tab, el) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'bulk') updateBulkUI();
+}
 
 // ══════════════════════════════════════════════
 //  SUPABASE AUTH
@@ -436,37 +624,23 @@ function showDashboard(user) {
     loadData();
 }
 
-// Check existing session on load
 (async function init() {
-    // Login form selalu tampil dulu
-    // Supabase check session di background
-    if (!supabaseReady) {
-        console.warn('Supabase not configured. Login form shown.');
-        return;
-    }
-
+    if (!supabaseReady) { console.warn('Supabase not configured.'); return; }
     try {
         const { data: { session } } = await sb.auth.getSession();
-        if (session) {
-            showDashboard(session.user);
-        }
-
-        // Listen for auth changes (token refresh, logout from another tab, etc.)
+        if (session) showDashboard(session.user);
         sb.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                showDashboard(session.user);
-            } else if (event === 'SIGNED_OUT') {
+            if (event === 'SIGNED_IN' && session) showDashboard(session.user);
+            else if (event === 'SIGNED_OUT') {
                 document.getElementById('dashboard').classList.remove('active');
                 document.getElementById('gateScreen').style.display = 'flex';
             }
         });
-    } catch (err) {
-        console.error('Session check error:', err);
-    }
+    } catch (err) { console.error('Session check error:', err); }
 })();
 
 // ══════════════════════════════════════════════
-//  API — langsung ke GAS (deployed dengan akses "Anyone")
+//  API
 // ══════════════════════════════════════════════
 async function api(action, params = {}) {
     const url = new URL(GAS_URL);
@@ -477,13 +651,10 @@ async function api(action, params = {}) {
         }
     });
 
-    // Coba langsung dulu, fallback ke CORS proxy
     let text;
     try {
         const res = await fetch(url.toString());
-        if (res.ok) {
-            text = await res.text();
-        }
+        if (res.ok) text = await res.text();
     } catch (_) { /* CORS blocked, fallback */ }
 
     if (!text) {
@@ -517,7 +688,7 @@ async function loadData() {
 }
 
 // ══════════════════════════════════════════════
-//  FILTER & SEARCH
+//  FILTER, SEARCH, SORT
 // ══════════════════════════════════════════════
 function setFilter(f, el) {
     currentFilter = f;
@@ -531,15 +702,63 @@ function applyFilters() {
     filteredData = allData.filter(row => {
         if (currentFilter !== 'all') {
             const ruang = (row.Ruang || '').toLowerCase();
-            const ket = (row.Keterangan || '').toLowerCase();
+            const ket = (row.Keterangan || '').toLowerCase().trim();
+            const status = (row.Status || '').toLowerCase().trim();
             if (['sinyal','data','musiq','multimedia'].includes(currentFilter) && !ruang.includes(currentFilter)) return false;
             if (currentFilter === 'batal' && ket !== 'batal') return false;
             if (currentFilter === 'pindah' && ket !== 'pindah') return false;
+            if (currentFilter === 'tambah' && ket !== 'tambah') return false;
+            if (currentFilter === 'ulang' && status !== 'ulang') return false;
+            if (currentFilter === 'mingguan' && status !== 'mingguan') return false;
+            if (currentFilter === 'bulanan' && status !== 'bulanan') return false;
         }
         if (q) return Object.values(row).some(v => String(v).toLowerCase().includes(q));
         return true;
     });
+
+    // Apply sort
+    if (sortField) {
+        filteredData.sort((a, b) => {
+            let va = (a[sortField] || '').toLowerCase();
+            let vb = (b[sortField] || '').toLowerCase();
+            // Special sort for Tanggal
+            if (sortField === 'Tanggal') {
+                va = parseTanggal(va);
+                vb = parseTanggal(vb);
+                if (va && vb) return sortDir === 'asc' ? va - vb : vb - va;
+            }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
     renderTable();
+}
+
+function sortBy(field) {
+    if (sortField === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortField = field;
+        sortDir = 'asc';
+    }
+    applyFilters();
+}
+
+function parseTanggal(str) {
+    if (!str) return null;
+    const clean = str.split(' ')[0].trim();
+    if (clean.includes('-')) {
+        const parts = clean.split('-');
+        if (parts.length >= 3) return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    }
+    const parts = clean.split('/');
+    if (parts.length < 3) return null;
+    const a=parseInt(parts[0]),b=parseInt(parts[1]),yyyy=parseInt(parts[2]);
+    let dd,mm;
+    if(a>12&&b<=12){dd=a;mm=b}else if(b>12&&a<=12){dd=b;mm=a}else{dd=a;mm=b}
+    return new Date(yyyy,mm-1,dd);
 }
 
 // ══════════════════════════════════════════════
@@ -576,7 +795,7 @@ function renderTable() {
 
 function labClass(l){if(!l)return'';const n=l.toLowerCase();if(n.includes('sinyal'))return'tag-lab-sinyal';if(n.includes('data'))return'tag-lab-data';if(n.includes('musiq'))return'tag-lab-musiq';if(n.includes('multimedia'))return'tag-lab-multimedia';return''}
 function keteranganTag(k){if(!k)return'—';const c=k.toLowerCase().trim();if(c==='pindah')return'<span class="tag tag-status-pindah">Pindah</span>';if(c==='tambah')return'<span class="tag tag-status-tambah">Tambah</span>';if(c==='batal')return'<span class="tag tag-status-batal">Batal</span>';return k}
-function statusBadge(s){if(!s)return'<span style="color:var(--text-muted)">—</span>';if(s.toLowerCase().trim()==='ulang')return'<span class="tag tag-status-ulang">⟳ Ulang</span>';return s}
+function statusBadge(s){if(!s)return'<span style="color:var(--text-muted)">—</span>';const c=s.toLowerCase().trim();if(c==='ulang')return'<span class="tag tag-status-ulang">⟳ Ulang</span>';if(c==='mingguan')return'<span class="tag tag-status-mingguan">📅 Mingguan</span>';if(c==='bulanan')return'<span class="tag tag-status-bulanan">🗓️ Bulanan</span>';return s}
 
 // ══════════════════════════════════════════════
 //  STATS
@@ -588,8 +807,43 @@ function updateStats(){
     document.getElementById('statLabsSub').textContent=labs.join(', ');
     const p=[...new Set(allData.map(r=>(r.Pengajar||'').trim()).filter(Boolean))];
     document.getElementById('statPengajar').textContent=p.length;
-    const now=new Date();
-    document.getElementById('statLastUpdate').textContent=now.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+
+    // Status counts
+    const mingguan=allData.filter(r=>(r.Status||'').toLowerCase().trim()==='mingguan').length;
+    const bulanan=allData.filter(r=>(r.Status||'').toLowerCase().trim()==='bulanan').length;
+    const batal=allData.filter(r=>(r.Keterangan||'').toLowerCase().trim()==='batal').length;
+    document.getElementById('statMingguan').textContent=mingguan;
+    document.getElementById('statBulanan').textContent=bulanan;
+    document.getElementById('statBatal').textContent=batal;
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════════
+function exportCSV() {
+    const dataToExport = filteredData.length ? filteredData : allData;
+    if (!dataToExport.length) { toast('Tidak ada data untuk diexport', 'error'); return; }
+
+    const headers = ['Tanggal','Hari','Sesi','Ruang','Pengajar','Kegiatan','Keterangan','Status'];
+    const csvRows = [headers.join(',')];
+
+    dataToExport.forEach(r => {
+        const row = headers.map(h => {
+            let val = (r[h] || '').replace(/"/g, '""');
+            return `"${val}"`;
+        });
+        csvRows.push(row.join(','));
+    });
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jadwal_lab_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV berhasil diexport!', 'success');
 }
 
 // ══════════════════════════════════════════════
@@ -611,18 +865,15 @@ function setRuang(selId,wrapId,customId,val){
     else{s.value='Lab Sinyal';document.getElementById(wrapId).style.display='none'}
 }
 
-// Helper: konversi YYYY-MM-DD atau DD/MM/YYYY → nama hari
 function getHariFromDate(str){
     if(!str)return'';
     const clean=str.split(' ')[0].trim();
     let yyyy,mm,dd;
     if(clean.includes('-')){
-        // YYYY-MM-DD
         const parts=clean.split('-');
         if(parts.length<3)return'';
         yyyy=parseInt(parts[0]);mm=parseInt(parts[1]);dd=parseInt(parts[2]);
     } else {
-        // DD/MM/YYYY or M/D/YYYY
         const parts=clean.split('/');
         if(parts.length<3)return'';
         const a=parseInt(parts[0]),b=parseInt(parts[1]);
@@ -635,12 +886,182 @@ function getHariFromDate(str){
     return['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][d.getDay()]||'';
 }
 
-// Auto-update Hari saat tanggal berubah
 function setupTanggalAutoHari(tanggalId, hariId){
     const el=document.getElementById(tanggalId);
     el.addEventListener('input',()=>{
         document.getElementById(hariId).value=getHariFromDate(el.value);
     });
+}
+
+// ══════════════════════════════════════════════
+//  BULK ADD UI
+// ══════════════════════════════════════════════
+function updateBulkUI() {
+    const mode = document.getElementById('bulkMode').value;
+    const endGroup = document.getElementById('bulkEndDateGroup');
+    const hint = document.getElementById('bulkDateHint');
+
+    if (mode === 'range') {
+        endGroup.style.display = 'block';
+        hint.textContent = 'Pilih tanggal awal & akhir';
+    } else {
+        endGroup.style.display = 'none';
+        if (mode === 'minggu') {
+            hint.textContent = 'Generate 7 hari berturut-turut dari tanggal ini';
+        } else {
+            hint.textContent = 'Generate semua hari di bulan yang sama';
+        }
+    }
+    updateBulkPreview();
+}
+
+function updateBulkPreview() {
+    const mode = document.getElementById('bulkMode').value;
+    const startDate = document.getElementById('bulkStartDate').value;
+    const previewEl = document.getElementById('bulkPreview');
+    const contentEl = document.getElementById('bulkPreviewContent');
+
+    if (!startDate) {
+        previewEl.style.display = 'none';
+        return;
+    }
+
+    // Get selected days
+    const selectedDays = [];
+    for (let i = 0; i <= 6; i++) {
+        const cb = document.getElementById('day-' + i);
+        if (cb && cb.checked) selectedDays.push(i);
+    }
+
+    if (selectedDays.length === 0) {
+        previewEl.style.display = 'block';
+        contentEl.innerHTML = '⚠️ Pilih minimal 1 hari';
+        return;
+    }
+
+    const start = new Date(startDate + 'T00:00:00');
+    let dates = [];
+
+    if (mode === 'minggu') {
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            if (selectedDays.includes(d.getDay())) dates.push(d);
+        }
+    } else if (mode === 'bulan') {
+        const year = start.getFullYear();
+        const month = start.getMonth();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= lastDay; day++) {
+            const d = new Date(year, month, day);
+            if (selectedDays.includes(d.getDay())) dates.push(d);
+        }
+    } else if (mode === 'range') {
+        const endDate = document.getElementById('bulkEndDate').value;
+        if (!endDate) {
+            previewEl.style.display = 'none';
+            return;
+        }
+        const end = new Date(endDate + 'T00:00:00');
+        let current = new Date(start);
+        while (current <= end) {
+            if (selectedDays.includes(current.getDay())) dates.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+        }
+    }
+
+    if (dates.length === 0) {
+        previewEl.style.display = 'block';
+        contentEl.innerHTML = '⚠️ Tidak ada tanggal yang sesuai dengan filter hari';
+        return;
+    }
+
+    // Group by week for display
+    const dateStrs = dates.map(d => {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dayName = HARI_MAP[d.getDay()];
+        return `${dayName} ${dd}/${mm}`;
+    });
+
+    let preview = `<strong>Preview:</strong> <span class="count">${dates.length} jadwal</span> akan dibuat<br>`;
+    preview += `<div style="margin-top:4px;font-size:.75rem;line-height:1.6">`;
+    // Show first 10, then summarize
+    if (dateStrs.length <= 12) {
+        preview += dateStrs.join(' • ');
+    } else {
+        preview += dateStrs.slice(0, 8).join(' • ');
+        preview += `<br>... dan ${dateStrs.length - 8} tanggal lainnya`;
+    }
+    preview += `</div>`;
+
+    previewEl.style.display = 'block';
+    contentEl.innerHTML = preview;
+}
+
+function toggleBulkRuangCustom() {
+    const sel = document.getElementById('bulkRuang').value;
+    document.getElementById('bulkRuangCustomWrap').style.display = sel === 'custom' ? 'block' : 'none';
+}
+
+async function submitBulk() {
+    const mode = document.getElementById('bulkMode').value;
+    const startDate = document.getElementById('bulkStartDate').value;
+    if (!startDate) { toast('Tanggal mulai wajib diisi!', 'error'); return; }
+
+    if (mode === 'range' && !document.getElementById('bulkEndDate').value) {
+        toast('Tanggal akhir wajib diisi untuk mode range!', 'error'); return;
+    }
+
+    // Get selected days
+    const selectedDays = [];
+    for (let i = 0; i <= 6; i++) {
+        const cb = document.getElementById('day-' + i);
+        if (cb && cb.checked) selectedDays.push(i);
+    }
+    if (selectedDays.length === 0) { toast('Pilih minimal 1 hari!', 'error'); return; }
+
+    const sesi = document.getElementById('bulkSesi').value;
+    const ruang = getRuang('bulkRuang', 'bulkRuangCustom');
+    const pengajar = document.getElementById('bulkPengajar').value.trim();
+    const kegiatan = document.getElementById('bulkKegiatan').value.trim();
+    const keterangan = document.getElementById('bulkKeterangan').value;
+    const status = document.getElementById('bulkStatus').value;
+
+    const btn = document.getElementById('bulkSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '📦 Menyimpan...';
+
+    const params = {
+        mode: mode,
+        startDate: startDate,
+        days: selectedDays.join(','),
+        Sesi: sesi,
+        Ruang: ruang,
+        Pengajar: pengajar,
+        Kegiatan: kegiatan,
+        Keterangan: keterangan,
+        Status: status
+    };
+
+    if (mode === 'range') {
+        params.endDate = document.getElementById('bulkEndDate').value;
+    }
+
+    try {
+        const res = await api('addBulk', params);
+        if (res.success) {
+            toast(`✅ ${res.count} jadwal berhasil ditambahkan!`, 'success');
+            loadData();
+        } else {
+            toast('Gagal: ' + (res.error || ''), 'error');
+        }
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📦 Tambahkan Semua';
 }
 
 // ══════════════════════════════════════════════
@@ -650,23 +1071,20 @@ function openEditModal(ri){
     const r=allData.find(x=>x._rowIndex===ri);
     if(!r){toast('Data tidak ditemukan','error');return}
     document.getElementById('editRowIndex').value=ri;
-    // Convert DD/MM/YYYY → YYYY-MM-DD for native date input
     let tglVal = r.Tanggal || '';
     if(tglVal && tglVal.includes('/')){
         const parts = tglVal.split('/');
         if(parts.length >= 3){
-            // Smart detect: M/D or D/M
             const a=parseInt(parts[0]),b=parseInt(parts[1]),yyyy=parseInt(parts[2]);
             let dd,mm;
             if(a>12&&b<=12){dd=a;mm=b}
             else if(b>12&&a<=12){dd=b;mm=a}
-            else{dd=a;mm=b} // assume DD/MM
+            else{dd=a;mm=b}
             tglVal = `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
         }
     }
     document.getElementById('editTanggal').value=tglVal;
     document.getElementById('editHari').value=r.Hari||'';
-    // Match Sesi value — handle both formats
     const sesiEl=document.getElementById('editSesi');
     const sesiVal=r.Sesi||'';
     let found=false;
@@ -704,7 +1122,7 @@ async function saveEdit(){
 function quickDeleteFromEdit(){const ri=document.getElementById('editRowIndex').value;closeModal('editModal');openDeleteModal(parseInt(ri))}
 
 // ══════════════════════════════════════════════
-//  ADD
+//  ADD (single)
 // ══════════════════════════════════════════════
 function openAddModal(){
     const d=new Date();
@@ -780,20 +1198,19 @@ function toast(msg,type='info'){
     setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(100%)';el.style.transition='all .3s';setTimeout(()=>el.remove(),300)},4000);
 }
 
-// Keyboard: ESC to close modals
 document.addEventListener('keydown',e=>{if(e.key==='Escape')['editModal','addModal','deleteModal'].forEach(closeModal)});
-
-// Click backdrop to close
 ['editModal','addModal','deleteModal'].forEach(id=>{
     document.getElementById(id).addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))closeModal(id)});
 });
 
-// Setup ruang selects
 setupRuang('editRuang','editRuangCustomWrap');
 setupRuang('addRuang','addRuangCustomWrap');
-
-// Setup tanggal → hari auto
 setupTanggalAutoHari('editTanggal','editHari');
+
+// Init bulk with today's date
+const today=new Date();
+document.getElementById('bulkStartDate').value=today.toISOString().slice(0,10);
+updateBulkUI();
 </script>
 </body>
 </html>

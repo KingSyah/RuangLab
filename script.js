@@ -98,7 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
             const status = (item.Status || '').toLowerCase().trim();
-            if (status === 'ulang') return true;
+
+            // ulang/mingguan/bulanan — always visible
+            if (status === 'ulang' || status === 'mingguan' || status === 'bulanan') return true;
+
             return itemDate >= weekStart && itemDate <= weekEnd;
         }).length;
     };
@@ -218,6 +221,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'lab-default';
     };
 
+    /**
+     * Check if an item should appear on a specific date in the current week.
+     * Handles: normal (exact date), ulang (same day-of-week), mingguan (within 1-week range), bulanan (same month).
+     */
+    const matchesDate = (item, checkDate, weekStart) => {
+        if (!item.Tanggal) return false;
+        const itemDate = parseTanggal(item.Tanggal);
+        if (!itemDate || isNaN(itemDate.getTime())) return false;
+
+        const status = (item.Status || '').toLowerCase().trim();
+
+        switch (status) {
+            case 'ulang':
+                // Repeat every week on the same day-of-week
+                return itemDate.getDay() === checkDate.getDay();
+
+            case 'mingguan':
+                // Show on the specific date only (1 week worth of entries already created)
+                return itemDate.toDateString() === checkDate.toDateString();
+
+            case 'bulanan':
+                // Show on the specific date only (1 month worth of entries already created)
+                return itemDate.toDateString() === checkDate.toDateString();
+
+            default:
+                // Normal: exact date match
+                return itemDate.toDateString() === checkDate.toDateString();
+        }
+    };
+
     const renderCalendar = (weekStartDate) => {
         currentWeekStartDate = new Date(weekStartDate);
         dom.grid.innerHTML = '';
@@ -258,14 +291,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!itemDate || isNaN(itemDate.getTime())) return false;
             const status = (item.Status || '').toLowerCase().trim();
 
-            if (status === 'ulang') {
-                const itemDow = itemDate.getDay();
-                for (let i = 0; i < 6; i++) {
-                    const checkDay = new Date(weekStartDate);
-                    checkDay.setDate(weekStartDate.getDate() + i);
-                    if (checkDay.getDay() === itemDow) return true;
-                }
-                return false;
+            if (status === 'ulang') return true; // always show, filtered per cell later
+            if (status === 'mingguan' || status === 'bulanan') {
+                // Show if item's date falls within this week
+                return itemDate >= weekStartDate && itemDate <= weekEndDate;
             }
             return itemDate >= weekStartDate && itemDate <= weekEndDate;
         });
@@ -288,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const weekWord = nearest.weeks === 1 ? 'minggu depan' : `${nearest.weeks} minggu lagi`;
                     const msg = isCurrentWeek
                         ? `Belum ada jadwal untuk minggu ini. Jadwal tersedia mulai <strong>${nearestFormatted}</strong> (${weekWord}).`
-                        : `Tidak ada jadwal di minggu ini. Jadwal terdekat tersedia mulai <strong>${nearestFormatted}</strong>.`;
+                        : `Tidak ada jadwal di minggu ini. Jadwal tersedia mulai <strong>${nearestFormatted}</strong>.`;
                     showNotice(msg, 'info', nearest.date);
                 } else {
                     showNotice(
@@ -322,21 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isToday) cell.classList.add('cell-today');
 
                 const schedules = weekData.filter(item => {
-                    const parts = item.Tanggal.split('/');
-                    if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) return false;
-                    const itemDate = parseTanggal(item.Tanggal);
-                    if (!itemDate || isNaN(itemDate.getTime())) return false;
-                    const status = (item.Status || '').toLowerCase().trim();
                     const sesiMatch = extractSesiNumber(item.Sesi) === sessionKey;
-                    let dateMatch = false;
-
-                    if (status === 'ulang') {
-                        dateMatch = itemDate.getDay() === currentDay.getDay();
-                    } else {
-                        dateMatch = itemDate.toDateString() === currentDay.toDateString();
-                    }
-
-                    return dateMatch && sesiMatch;
+                    if (!sesiMatch) return false;
+                    return matchesDate(item, currentDay, weekStartDate);
                 });
 
                 if (schedules.length > 0) {
@@ -345,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         itemDiv.className = `schedule-item ${getLabColorClass(schedule.Ruang)}`;
 
                         const keterangan = (schedule.Keterangan || '').toLowerCase().trim();
+                        const status = (schedule.Status || '').toLowerCase().trim();
                         const isPindah = keterangan === 'pindah';
                         const isTambah = keterangan === 'tambah';
                         const isBatal  = keterangan === 'batal';
@@ -382,11 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             htmlContent += `<p class="item-activity empty-data">Data tidak lengkap</p>`;
                         }
 
-                        // Status labels
+                        // Status/badge labels
                         const labels = [];
                         if (isBatal)  labels.push(`<span class="badge badge-batal">✕ Dibatalkan</span>`);
                         if (isPindah) labels.push(`<span class="badge badge-pindah">↩ Dipindah</span>`);
                         if (isTambah) labels.push(`<span class="badge badge-tambah">＋ Tambahan</span>`);
+                        if (status === 'ulang') labels.push(`<span class="badge badge-ulang">⟳ Ulang</span>`);
+                        if (status === 'mingguan') labels.push(`<span class="badge badge-mingguan">📅 Mingguan</span>`);
+                        if (status === 'bulanan') labels.push(`<span class="badge badge-bulanan">🗓️ Bulanan</span>`);
                         if (labels.length > 0) {
                             htmlContent += `<div class="badge-row">${labels.join('')}</div>`;
                         }

@@ -425,9 +425,12 @@ body {
     white-space: nowrap;
 }
 
-.badge-batal  { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-.badge-pindah { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-.badge-tambah { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.badge-batal     { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.badge-pindah    { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.badge-tambah    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.badge-ulang     { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.badge-mingguan  { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.badge-bulanan   { background: #f3e8ff; color: #7e22ce; border: 1px solid #c084fc; }
 
 /* ── FOOTER ─────────────────────────── */
 .footer {
