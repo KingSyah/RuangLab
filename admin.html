@@ -693,8 +693,9 @@ async function handleResetRequest() {
 
     try {
         // redirectTo harus sesuai dengan yang di-set di Supabase Dashboard
+        const basePath = window.location.pathname.replace(/\/admin\.html$/, '');
         const { error } = await sb.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/reset-password.html'
+            redirectTo: window.location.origin + basePath + '/reset-password.html'
         });
         if (error) throw error;
 
