@@ -2,11 +2,6 @@
  * ⚠️ SEBELUM EDIT: baca CHANGELOG.md untuk arsitektur & format tanggal
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // ═══════════════════════════════════════════════════════════════
-    //  JSONP approach: bypasses CORS completely via <script> tag.
-    //  GAS API redirects to googleusercontent.com which blocks CORS,
-    //  but JSONP (script injection) ignores CORS entirely.
-    // ═══════════════════════════════════════════════════════════════
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
     const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
@@ -46,9 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    // ═══════════════════════════════════════════════════════════════
-    //  Smart date parser
-    // ═══════════════════════════════════════════════════════════════
     const parseTanggal = (str) => {
         if (!str) return null;
         const clean = String(str).split(' ')[0].trim();
@@ -93,38 +85,41 @@ document.addEventListener('DOMContentLoaded', () => {
         return m ? m[1] : '';
     };
 
-    const countItemsInWeek = (weekStart) => {
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 5);
-        weekEnd.setHours(23, 59, 59, 999);
+    // FIX: normalize semua tanggal ke midnight sebelum perbandingan
+    const toMidnight = (d) => {
+        const n = new Date(d);
+        n.setHours(0, 0, 0, 0);
+        return n;
+    };
 
-        // Normalize weekStart to midnight so comparisons are consistent
-        const ws = new Date(weekStart);
-        ws.setHours(0, 0, 0, 0);
+    const countItemsInWeek = (weekStart) => {
+        const ws = toMidnight(weekStart);
+        const weekEnd = new Date(ws);
+        weekEnd.setDate(ws.getDate() + 5);
+        weekEnd.setHours(23, 59, 59, 999);
 
         return allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
-            itemDate.setHours(0, 0, 0, 0);
+            const id = toMidnight(itemDate);
             const status = (item.Status || '').toLowerCase().trim();
 
             if (status === 'ulang') {
-                // Only count ulang if its day-of-week falls within Mon–Sat
-                const dow = itemDate.getDay();
+                const dow = id.getDay();
                 return dow >= 1 && dow <= 6;
             }
             if (status === 'mingguan') {
-                const rangeEnd = new Date(itemDate);
-                rangeEnd.setDate(itemDate.getDate() + 6);
+                const rangeEnd = new Date(id);
+                rangeEnd.setDate(id.getDate() + 6);
                 rangeEnd.setHours(23, 59, 59, 999);
-                return rangeEnd >= ws && itemDate <= weekEnd;
+                return rangeEnd >= ws && id <= weekEnd;
             }
             if (status === 'bulanan') {
-                return (itemDate.getMonth() === ws.getMonth() && itemDate.getFullYear() === ws.getFullYear())
-                    || (itemDate.getMonth() === weekEnd.getMonth() && itemDate.getFullYear() === weekEnd.getFullYear());
+                return (id.getMonth() === ws.getMonth() && id.getFullYear() === ws.getFullYear())
+                    || (id.getMonth() === weekEnd.getMonth() && id.getFullYear() === weekEnd.getFullYear());
             }
-            return itemDate >= ws && itemDate <= weekEnd;
+            return id >= ws && id <= weekEnd;
         }).length;
     };
 
@@ -176,35 +171,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'lab-default';
     };
 
-    const matchesDate = (item, checkDate, weekStart) => {
+    const matchesDate = (item, checkDate) => {
         if (!item.Tanggal) return false;
         const itemDate = parseTanggal(item.Tanggal);
         if (!itemDate || isNaN(itemDate.getTime())) return false;
 
-        // Normalize all dates to midnight for reliable comparison
-        itemDate.setHours(0, 0, 0, 0);
-        const check = new Date(checkDate);
-        check.setHours(0, 0, 0, 0);
-
+        const id = toMidnight(itemDate);
+        const check = toMidnight(checkDate);
         const status = (item.Status || '').toLowerCase().trim();
 
         switch (status) {
             case 'ulang':
-                return itemDate.getDay() === check.getDay();
+                return id.getDay() === check.getDay();
 
             case 'mingguan': {
-                const mEnd = new Date(itemDate);
-                mEnd.setDate(itemDate.getDate() + 6);
+                const mEnd = new Date(id);
+                mEnd.setDate(id.getDate() + 6);
                 mEnd.setHours(23, 59, 59, 999);
-                return check >= itemDate && check <= mEnd;
+                return check >= id && check <= mEnd;
             }
 
             case 'bulanan':
-                return itemDate.getMonth() === check.getMonth()
-                    && itemDate.getFullYear() === check.getFullYear();
+                return id.getMonth() === check.getMonth()
+                    && id.getFullYear() === check.getFullYear();
 
             default:
-                return itemDate.getTime() === check.getTime();
+                return id.getTime() === check.getTime();
         }
     };
 
@@ -214,19 +206,21 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.loading.style.display = 'none';
         hideNotice();
 
-        const weekEndDate = new Date(weekStartDate);
-        weekEndDate.setDate(weekStartDate.getDate() + 5);
+        const ws = toMidnight(weekStartDate);
+        const weekEndDate = new Date(ws);
+        weekEndDate.setDate(ws.getDate() + 5);
         weekEndDate.setHours(23, 59, 59, 999);
-        dom.weekDisplay.textContent = `${formatDate(weekStartDate)} – ${formatDate(weekEndDate)}`;
+
+        dom.weekDisplay.textContent = `${formatDate(ws)} – ${formatDate(weekEndDate)}`;
 
         const todayMonday = getMonday(new Date());
-        const isCurrentWeek = weekStartDate.toDateString() === todayMonday.toDateString();
+        const isCurrentWeek = ws.toDateString() === todayMonday.toDateString();
 
         dom.grid.appendChild(document.createElement('div'));
 
         DAYS.forEach((day, i) => {
-            const d = new Date(weekStartDate);
-            d.setDate(weekStartDate.getDate() + i);
+            const d = new Date(ws);
+            d.setDate(ws.getDate() + i);
             const headerCell = document.createElement('div');
             headerCell.className = 'grid-header';
             const isToday = d.toDateString() === new Date().toDateString();
@@ -242,28 +236,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!item.Tanggal) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
-            itemDate.setHours(0, 0, 0, 0);
+            const id = toMidnight(itemDate);
             const status = (item.Status || '').toLowerCase().trim();
 
             if (status === 'ulang') {
-                const dow = itemDate.getDay();
+                const dow = id.getDay();
                 return dow >= 1 && dow <= 6;
             }
             if (status === 'mingguan') {
-                const rangeEnd = new Date(itemDate);
-                rangeEnd.setDate(itemDate.getDate() + 6);
+                const rangeEnd = new Date(id);
+                rangeEnd.setDate(id.getDate() + 6);
                 rangeEnd.setHours(23, 59, 59, 999);
-                return rangeEnd >= weekStartDate && itemDate <= weekEndDate;
+                return rangeEnd >= ws && id <= weekEndDate;
             }
             if (status === 'bulanan') {
-                const weekMonth = weekStartDate.getMonth();
-                const weekYear = weekStartDate.getFullYear();
-                const endMonth = weekEndDate.getMonth();
-                const endYear = weekEndDate.getFullYear();
-                return (itemDate.getMonth() === weekMonth && itemDate.getFullYear() === weekYear)
-                    || (itemDate.getMonth() === endMonth && itemDate.getFullYear() === endYear);
+                return (id.getMonth() === ws.getMonth() && id.getFullYear() === ws.getFullYear())
+                    || (id.getMonth() === weekEndDate.getMonth() && id.getFullYear() === weekEndDate.getFullYear());
             }
-            return itemDate >= weekStartDate && itemDate <= weekEndDate;
+            return id >= ws && id <= weekEndDate;
         });
 
         const weekDataCount = weekData.length;
@@ -276,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (weekDataCount === 0) {
-            const nearest = findNearestWeekWithData(weekStartDate);
+            const nearest = findNearestWeekWithData(ws);
             if (nearest) {
                 const nearestFormatted = formatDate(nearest.date);
                 if (nearest.direction === 'future') {
@@ -309,8 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
 
-                const currentDay = new Date(weekStartDate);
-                currentDay.setDate(weekStartDate.getDate() + dayIndex);
+                const currentDay = new Date(ws);
+                currentDay.setDate(ws.getDate() + dayIndex);
 
                 const isToday = currentDay.toDateString() === new Date().toDateString();
                 if (isToday) cell.classList.add('cell-today');
@@ -318,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const schedules = weekData.filter(item => {
                     const sesiMatch = extractSesiNumber(item.Sesi) === sessionKey;
                     if (!sesiMatch) return false;
-                    return matchesDate(item, currentDay, weekStartDate);
+                    return matchesDate(item, currentDay);
                 });
 
                 if (schedules.length > 0) {
@@ -384,15 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // ═══════════════════════════════════════════════════════════════
-    //  DATA FETCHING: JSONP (primary) → CSV (fallback)
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * JSONP fetch: injects <script> tag to call GAS API.
-     * Bypasses CORS completely because <script> tags are exempt.
-     * Requires callback parameter support in code.gs.
-     */
     function fetchViaJsonp(timeout) {
         return new Promise((resolve, reject) => {
             const callbackName = '_gasCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -423,9 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * CSV fetch: direct or via CORS proxy
-     */
     function fetchViaCsv() {
         const cacheBuster = `&_t=${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const csvUrl = SHEETS_CSV_URL + cacheBuster;
@@ -520,9 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return data;
     };
 
-    // ═══════════════════════════════════════════════════════════════
-    //  Main fetch: try JSONP first (fresh data), fallback to CSV
-    // ═══════════════════════════════════════════════════════════════
     const fetchDataAndRender = async (preserveCurrentWeek = false) => {
         dom.loading.style.display = 'flex';
         dom.grid.innerHTML = '';
@@ -532,7 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let dataSource = 'unknown';
 
         try {
-            // Primary: JSONP (real-time data, no CORS issues)
             try {
                 const result = await fetchViaJsonp(12000);
                 if (result && result.success && result.data) {
@@ -543,7 +517,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (jsonpErr) {
                 console.warn('JSONP failed, trying CSV:', jsonpErr.message);
-                // Fallback: CSV (may be cached but always CORS-safe)
                 allScheduleData = await fetchViaCsv();
                 dataSource = 'CSV';
             }
