@@ -1,9 +1,47 @@
 /**
  * ⚠️ SEBELUM EDIT: baca CHANGELOG.md untuk arsitektur & format tanggal
+ *
+ * Konfigurasi sensitif (GAS_URL, SHEETS_CSV_URL) disimpan di Supabase
+ * tabel `app_config` dan di-fetch saat halaman dimuat.
  */
-document.addEventListener('DOMContentLoaded', () => {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
-    const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
+
+// ── Supabase config (anon key — memang harus publik untuk client-side) ──
+const _SB_URL  = 'https://qfbqoyyatqjgraybkhcr.supabase.co';
+const _SB_ANON = 'sb_publishable_gpKMwLHoTavSvhaBz70MJQ_OsBo_M1P';
+
+/**
+ * Ambil semua baris dari tabel app_config dan kembalikan sebagai objek
+ * { GAS_URL: '...', SHEETS_CSV_URL: '...' }
+ * Jika gagal (offline / tabel belum ada), lempar error.
+ */
+async function loadAppConfig() {
+    const res = await fetch(
+        `${_SB_URL}/rest/v1/app_config?select=key,value`,
+        { headers: { apikey: _SB_ANON, Authorization: `Bearer ${_SB_ANON}` } }
+    );
+    if (!res.ok) throw new Error(`app_config fetch failed: ${res.status}`);
+    const rows = await res.json();                          // [{ key, value }, ...]
+    return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // ── Fetch config dari Supabase sebelum apapun ──────────────────────
+    let GAS_URL, SHEETS_CSV_URL;
+    try {
+        const cfg = await loadAppConfig();
+        GAS_URL        = cfg['GAS_URL'];
+        SHEETS_CSV_URL = cfg['SHEETS_CSV_URL'];
+        if (!GAS_URL || !SHEETS_CSV_URL) throw new Error('Key tidak lengkap di app_config');
+    } catch (err) {
+        console.error('Gagal memuat konfigurasi dari Supabase:', err);
+        // Tampilkan pesan error ke pengguna
+        const grid = document.getElementById('calendar-grid');
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+        if (grid) grid.innerHTML = `<p class="error-msg">⚠️ Gagal memuat konfigurasi. Periksa koneksi atau setup tabel <code>app_config</code> di Supabase.<br><small>${err.message}</small></p>`;
+        return;
+    }
+
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
     const dom = {

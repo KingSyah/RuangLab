@@ -583,9 +583,21 @@
 <script>
 // ══════════════════════════════════════════════
 //  KONFIGURASI
+//  GAS_URL diambil dari Supabase tabel app_config
+//  saat loadData() dipanggil pertama kali.
 // ══════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
+let GAS_URL = null;   // diisi setelah loadAppConfig()
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+async function loadAppConfig() {
+    const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/app_config?select=key,value`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+    );
+    if (!res.ok) throw new Error(`app_config fetch failed: ${res.status}`);
+    const rows = await res.json();
+    return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
 
 // ══════════════════════════════════════════════
 //  STATE
@@ -781,11 +793,23 @@ async function handleLogout() {
     document.getElementById('password').value = '';
 }
 
-function showDashboard(user) {
+async function showDashboard(user) {
     document.getElementById('gateScreen').style.display = 'none';
     document.getElementById('dashboard').classList.add('active');
     const name = (user.user_metadata && user.user_metadata.full_name) || user.email || 'Admin';
     document.getElementById('currentUser').textContent = name;
+
+    // Muat config dulu (GAS_URL) sebelum loadData
+    if (!GAS_URL) {
+        try {
+            const cfg = await loadAppConfig();
+            GAS_URL = cfg['GAS_URL'];
+            if (!GAS_URL) throw new Error('GAS_URL tidak ditemukan di app_config');
+        } catch (err) {
+            toast('⚠️ Gagal memuat konfigurasi: ' + err.message, 'error');
+            return;
+        }
+    }
     loadData();
 }
 
