@@ -7,11 +7,7 @@
 const _SB_URL  = 'https://qfbqoyyatqjgraybkhcr.supabase.co';
 const _SB_ANON = 'sb_publishable_gpKMwLHoTavSvhaBz70MJQ_OsBo_M1P';
 
-/**
- * Ambil semua baris dari tabel app_config dan kembalikan sebagai objek
- * { GAS_URL: '...', SHEETS_CSV_URL: '...' }
- * Jika gagal (offline / tabel belum ada), lempar error.
- */
+
 async function loadAppConfig() {
     const res = await fetch(
         `${_SB_URL}/rest/v1/app_config?select=key,value`,
