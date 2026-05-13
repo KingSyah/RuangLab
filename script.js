@@ -1,8 +1,6 @@
 /**
  * ⚠️ SEBELUM EDIT: baca CHANGELOG.md untuk arsitektur & format tanggal
  *
- * Konfigurasi sensitif (GAS_URL, SHEETS_CSV_URL) disimpan di Supabase
- * tabel `app_config` dan di-fetch saat halaman dimuat.
  */
 
 // ── Supabase config (anon key — memang harus publik untuk client-side) ──
