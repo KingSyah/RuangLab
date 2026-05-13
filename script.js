@@ -3,9 +3,11 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
     // ═══════════════════════════════════════════════════════════════
-    //  Data source: Published CSV (CORS-safe, no proxy needed)
-    //  GAS API tidak dipakai karena redirect ke domain lain (CORS block)
+    //  JSONP approach: bypasses CORS completely via <script> tag.
+    //  GAS API redirects to googleusercontent.com which blocks CORS,
+    //  but JSONP (script injection) ignores CORS entirely.
     // ═══════════════════════════════════════════════════════════════
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
     const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
@@ -46,14 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ═══════════════════════════════════════════════════════════════
     //  Smart date parser
-    //  Handles: YYYY-MM-DD, DD/MM/YYYY, M/D/YYYY
     // ═══════════════════════════════════════════════════════════════
     const parseTanggal = (str) => {
         if (!str) return null;
         const clean = String(str).split(' ')[0].trim();
         if (!clean) return null;
 
-        // YYYY-MM-DD — unambiguous
         if (clean.includes('-')) {
             const parts = clean.split('-');
             if (parts.length >= 3) {
@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
-        // DD/MM/YYYY or M/D/YYYY
         const parts = clean.split('/');
         if (parts.length < 3) return null;
         const a = parseInt(parts[0]);
@@ -77,18 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let dd, mm;
         if (a > 12 && b <= 12) {
-            dd = a; mm = b;       // DD/MM (e.g., 25/04/2026)
+            dd = a; mm = b;
         } else if (b > 12 && a <= 12) {
-            dd = b; mm = a;       // M/D (e.g., 2/13/2026)
+            dd = b; mm = a;
         } else {
-            // Ambiguous (both ≤ 12): assume DD/MM since code.gs writes DD/MM
             dd = a; mm = b;
         }
 
         return new Date(yyyy, mm - 1, dd);
     };
 
-    // Extract sesi number: "Sesi 1 (08.30 - 10.30)" → "1"
     const extractSesiNumber = (val) => {
         if (!val) return '';
         const clean = String(val).replace(/[\u200B-\u200D\uFEFF\r\n]/g, '').trim();
@@ -96,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return m ? m[1] : '';
     };
 
-    // Count schedule items for a given week (Mon–Sat)
     const countItemsInWeek = (weekStart) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 5);
@@ -120,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }).length;
     };
 
-    // Find nearest week that has data
     const findNearestWeekWithData = (fromMonday) => {
         for (let delta = 1; delta <= 12; delta++) {
             const nextWeek = new Date(fromMonday);
@@ -169,10 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'lab-default';
     };
 
-    /**
-     * Check if an item should appear on a specific date.
-     * Handles: normal, ulang, mingguan, bulanan
-     */
     const matchesDate = (item, checkDate, weekStart) => {
         if (!item.Tanggal) return false;
         const itemDate = parseTanggal(item.Tanggal);
@@ -213,10 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayMonday = getMonday(new Date());
         const isCurrentWeek = weekStartDate.toDateString() === todayMonday.toDateString();
 
-        // Corner spacer
         dom.grid.appendChild(document.createElement('div'));
 
-        // Day headers
         DAYS.forEach((day, i) => {
             const d = new Date(weekStartDate);
             d.setDate(weekStartDate.getDate() + i);
@@ -231,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.grid.appendChild(headerCell);
         });
 
-        // Filter this week's data
         const weekData = allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
             const itemDate = parseTanggal(item.Tanggal);
@@ -264,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '';
         }
 
-        // Show notice if this week is empty
         if (weekDataCount === 0) {
             const nearest = findNearestWeekWithData(weekStartDate);
             if (nearest) {
@@ -286,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Render session rows
         Object.keys(SESSIONS).forEach(sessionKey => {
             const sessionHeader = document.createElement('div');
             sessionHeader.className = 'session-header';
@@ -327,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (isTambah) itemDiv.classList.add('schedule-tambah');
                         if (isBatal)  itemDiv.classList.add('schedule-batal');
 
-                        // Format Pengajar
                         const pengajar = (schedule.Pengajar || '').trim();
                         let formattedPengajar = '';
                         if (pengajar) {
@@ -339,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
 
-                        // Format Kegiatan
                         const kegiatan = (schedule.Kegiatan || '').trim();
                         let formattedKegiatan = '';
                         if (kegiatan) {
@@ -356,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             htmlContent += `<p class="item-activity empty-data">Data tidak lengkap</p>`;
                         }
 
-                        // Badge labels
                         const labels = [];
                         if (isBatal)  labels.push(`<span class="badge badge-batal">✕ Dibatalkan</span>`);
                         if (isPindah) labels.push(`<span class="badge badge-pindah">↩ Dipindah</span>`);
@@ -379,13 +362,80 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ═══════════════════════════════════════════════════════════════
-    //  CSV Parser — reads published Google Sheets CSV
+    //  DATA FETCHING: JSONP (primary) → CSV (fallback)
     // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * JSONP fetch: injects <script> tag to call GAS API.
+     * Bypasses CORS completely because <script> tags are exempt.
+     * Requires callback parameter support in code.gs.
+     */
+    function fetchViaJsonp(timeout) {
+        return new Promise((resolve, reject) => {
+            const callbackName = '_gasCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            const script = document.createElement('script');
+            const timer = setTimeout(() => {
+                cleanup();
+                reject(new Error('JSONP timeout'));
+            }, timeout || 10000);
+
+            function cleanup() {
+                clearTimeout(timer);
+                delete window[callbackName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+            }
+
+            window[callbackName] = function(data) {
+                cleanup();
+                resolve(data);
+            };
+
+            script.src = GAS_URL + '?action=getData&callback=' + callbackName + '&_t=' + Date.now();
+            script.onerror = function() {
+                cleanup();
+                reject(new Error('JSONP script load error'));
+            };
+
+            document.head.appendChild(script);
+        });
+    }
+
+    /**
+     * CSV fetch: direct or via CORS proxy
+     */
+    function fetchViaCsv() {
+        const cacheBuster = `&_t=${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const csvUrl = SHEETS_CSV_URL + cacheBuster;
+
+        return new Promise(async (resolve, reject) => {
+            let csvText = null;
+
+            try {
+                const response = await fetch(csvUrl);
+                if (response.ok) csvText = await response.text();
+            } catch (_) {}
+
+            if (!csvText) {
+                try {
+                    const proxyUrl = CORS_PROXY + encodeURIComponent(csvUrl);
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) csvText = await response.text();
+                } catch (_) {}
+            }
+
+            if (!csvText) {
+                reject(new Error('CSV fetch failed'));
+                return;
+            }
+
+            resolve(parseCSV(csvText));
+        });
+    }
+
     const parseCSV = (text) => {
         const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
         const headersLine = lines[0] || '';
 
-        // Parse headers
         const headers = [];
         let currentHeader = '';
         let inQuotes = false;
@@ -403,7 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         headers.push(currentHeader.trim());
 
-        // Parse rows
         const data = [];
         for (let lineIdx = 1; lineIdx < lines.length; lineIdx++) {
             const line = lines[lineIdx];
@@ -431,18 +480,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             values.push(currentVal.trim());
 
-            // Build object from headers
             const obj = {};
             for (let h = 0; h < headers.length; h++) {
                 obj[headers[h]] = (values[h] || '').replace(/[\r\n]/g, '').trim();
             }
 
-            // Normalize "R" header → "Timestamp"
             if (obj['R'] !== undefined && obj['Timestamp'] === undefined) {
                 obj['Timestamp'] = obj['R'];
             }
 
-            // Skip empty rows
             if (!obj.Tanggal && !obj.Hari && !obj.Sesi && !obj.Ruang) continue;
 
             data.push(obj);
@@ -452,10 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ═══════════════════════════════════════════════════════════════
-    //  Fetch data from published CSV
-    //  - Direct fetch (Google Sheets CSV supports CORS)
-    //  - CORS proxy fallback
-    //  - Cache-buster to get fresh data
+    //  Main fetch: try JSONP first (fresh data), fallback to CSV
     // ═══════════════════════════════════════════════════════════════
     const fetchDataAndRender = async (preserveCurrentWeek = false) => {
         dom.loading.style.display = 'flex';
@@ -463,41 +506,31 @@ document.addEventListener('DOMContentLoaded', () => {
         hideNotice();
 
         const previousWeekStartDate = currentWeekStartDate ? new Date(currentWeekStartDate) : null;
+        let dataSource = 'unknown';
 
         try {
-            // Cache-buster: force fresh CSV
-            const cacheBuster = `&_t=${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-            const csvUrl = SHEETS_CSV_URL + cacheBuster;
-
-            let csvText = null;
-
-            // Try direct fetch first (Google Sheets CSV supports CORS)
+            // Primary: JSONP (real-time data, no CORS issues)
             try {
-                const response = await fetch(csvUrl);
-                if (response.ok) csvText = await response.text();
-            } catch (_) {
-                // CORS blocked (unlikely for Google Sheets published CSV)
+                const result = await fetchViaJsonp(12000);
+                if (result && result.success && result.data) {
+                    allScheduleData = result.data;
+                    dataSource = 'API';
+                } else {
+                    throw new Error(result ? result.error : 'Invalid JSONP response');
+                }
+            } catch (jsonpErr) {
+                console.warn('JSONP failed, trying CSV:', jsonpErr.message);
+                // Fallback: CSV (may be cached but always CORS-safe)
+                allScheduleData = await fetchViaCsv();
+                dataSource = 'CSV';
             }
 
-            // Fallback: CORS proxy
-            if (!csvText) {
-                const proxyUrl = CORS_PROXY + encodeURIComponent(csvUrl);
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                csvText = await response.text();
-            }
-
-            // Parse CSV
-            allScheduleData = parseCSV(csvText);
-
-            // Update footer
             const now = new Date();
             dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
                 day: '2-digit', month: 'short', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
-            }) + ` · ${allScheduleData.length} data`;
+            }) + ` · ${allScheduleData.length} data · ${dataSource}`;
 
-            // Determine which week to show
             let targetMonday;
             if (preserveCurrentWeek && previousWeekStartDate) {
                 targetMonday = previousWeekStartDate;
@@ -510,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             dom.grid.innerHTML = `<p class="error-msg">Gagal memuat data. Silakan coba lagi nanti.<br><small>${error.message}</small></p>`;
             dom.loading.style.display = 'none';
-            console.error('Fetch error:', error);
+            console.error('All fetch methods failed:', error);
         }
     };
 
@@ -537,7 +570,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initial load
     fetchDataAndRender(false);
     setFooter();
 });
