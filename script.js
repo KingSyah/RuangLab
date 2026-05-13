@@ -3,12 +3,10 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
     // ═══════════════════════════════════════════════════════════════
-    //  FIX: Pakai GAS API langsung (bukan published CSV) agar data
-    //       selalu up-to-date setelah add/edit/delete via admin.
-    //  Published CSV Google Sheets punya cache lama (bisa berjam-jam)
-    //  sehingga data baru tidak muncul di kalender publik.
+    //  Data source: Published CSV (CORS-safe, no proxy needed)
+    //  GAS API tidak dipakai karena redirect ke domain lain (CORS block)
     // ═══════════════════════════════════════════════════════════════
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
+    const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
     const dom = {
@@ -46,12 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    // Smart date parser: handles YYYY-MM-DD (standard), M/D/YYYY (Sheets CSV), DD/MM/YYYY (admin)
+    // ═══════════════════════════════════════════════════════════════
+    //  Smart date parser
+    //  Handles: YYYY-MM-DD, DD/MM/YYYY, M/D/YYYY
+    // ═══════════════════════════════════════════════════════════════
     const parseTanggal = (str) => {
         if (!str) return null;
-        const clean = str.split(' ')[0].trim();
+        const clean = String(str).split(' ')[0].trim();
+        if (!clean) return null;
 
-        // YYYY-MM-DD — unambiguous standard
+        // YYYY-MM-DD — unambiguous
         if (clean.includes('-')) {
             const parts = clean.split('-');
             if (parts.length >= 3) {
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
-        // M/D/YYYY or DD/MM/YYYY — detect via value ranges
+        // DD/MM/YYYY or M/D/YYYY
         const parts = clean.split('/');
         if (parts.length < 3) return null;
         const a = parseInt(parts[0]);
@@ -75,22 +77,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let dd, mm;
         if (a > 12 && b <= 12) {
-            dd = a; mm = b;        // DD/MM
+            dd = a; mm = b;       // DD/MM (e.g., 25/04/2026)
         } else if (b > 12 && a <= 12) {
-            dd = b; mm = a;        // M/D (Google Sheets CSV)
+            dd = b; mm = a;       // M/D (e.g., 2/13/2026)
         } else {
-            dd = a; mm = b;        // Ambiguous → assume DD/MM
+            // Ambiguous (both ≤ 12): assume DD/MM since code.gs writes DD/MM
+            dd = a; mm = b;
         }
 
         return new Date(yyyy, mm - 1, dd);
     };
 
-    // Extract sesi number from various formats: "1", "Sesi 1", "Sesi 1 (08.30 - 10.30)"
+    // Extract sesi number: "Sesi 1 (08.30 - 10.30)" → "1"
     const extractSesiNumber = (val) => {
         if (!val) return '';
-        const clean = val.replace(/[\u200B-\u200D\uFEFF\r\n]/g, '').trim();
+        const clean = String(val).replace(/[\u200B-\u200D\uFEFF\r\n]/g, '').trim();
         const m = clean.match(/(\d)/);
-        return m ? m[1] : clean;
+        return m ? m[1] : '';
     };
 
     // Count schedule items for a given week (Mon–Sat)
@@ -99,13 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
         weekEnd.setDate(weekStart.getDate() + 5);
         return allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
-            const parts = item.Tanggal.split('/');
-            if (parts.length < 3) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
             const status = (item.Status || '').toLowerCase().trim();
 
-            if (status === 'ulang') return true; // always visible
+            if (status === 'ulang') return true;
             if (status === 'mingguan') {
                 const rangeEnd = new Date(itemDate);
                 rangeEnd.setDate(itemDate.getDate() + 6);
@@ -115,12 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return (itemDate.getMonth() === weekStart.getMonth() && itemDate.getFullYear() === weekStart.getFullYear())
                     || (itemDate.getMonth() === weekEnd.getMonth() && itemDate.getFullYear() === weekEnd.getFullYear());
             }
-
             return itemDate >= weekStart && itemDate <= weekEnd;
         }).length;
     };
 
-    // Find nearest week (forward first, then backward) that has data
+    // Find nearest week that has data
     const findNearestWeekWithData = (fromMonday) => {
         for (let delta = 1; delta <= 12; delta++) {
             const nextWeek = new Date(fromMonday);
@@ -170,8 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * Check if an item should appear on a specific date in the current week.
-     * Handles: normal (exact date), ulang (same day-of-week), mingguan (7 days from start), bulanan (entire month).
+     * Check if an item should appear on a specific date.
+     * Handles: normal, ulang, mingguan, bulanan
      */
     const matchesDate = (item, checkDate, weekStart) => {
         if (!item.Tanggal) return false;
@@ -234,21 +234,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filter this week's data
         const weekData = allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
-            const parts = item.Tanggal.split('/');
-            if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
             const status = (item.Status || '').toLowerCase().trim();
 
-            if (status === 'ulang') return true; // always show, filtered per cell later
+            if (status === 'ulang') return true;
             if (status === 'mingguan') {
-                // Show if the 7-day range (itemDate → itemDate+6) overlaps with this week
                 const rangeEnd = new Date(itemDate);
                 rangeEnd.setDate(itemDate.getDate() + 6);
                 return rangeEnd >= weekStartDate && itemDate <= weekEndDate;
             }
             if (status === 'bulanan') {
-                // Show if item's month/year matches any date in this week
                 const weekMonth = weekStartDate.getMonth();
                 const weekYear = weekStartDate.getFullYear();
                 const endMonth = weekEndDate.getMonth();
@@ -360,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             htmlContent += `<p class="item-activity empty-data">Data tidak lengkap</p>`;
                         }
 
-                        // Status/badge labels
+                        // Badge labels
                         const labels = [];
                         if (isBatal)  labels.push(`<span class="badge badge-batal">✕ Dibatalkan</span>`);
                         if (isPindah) labels.push(`<span class="badge badge-pindah">↩ Dipindah</span>`);
@@ -383,128 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ═══════════════════════════════════════════════════════════════
-    //  FIX: Fetch data via GAS API (JSON) instead of published CSV
-    //  - Tidak ada delay cache
-    //  - Data selalu real-time dari Google Sheet
-    //  - Format konsisten (code.gs sudah handle normalisasi tanggal)
+    //  CSV Parser — reads published Google Sheets CSV
     // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Call GAS API with CORS proxy fallback (same pattern as admin.html)
-     */
-    async function gasApi(action) {
-        const url = new URL(GAS_URL);
-        url.searchParams.set('action', action);
-        // Cache-buster
-        url.searchParams.set('t', Date.now());
-        url.searchParams.set('r', Math.floor(Math.random() * 1000000));
-
-        let text;
-
-        // Try direct first
-        try {
-            const res = await fetch(url.toString());
-            if (res.ok) text = await res.text();
-        } catch (_) { /* CORS blocked, fallback to proxy */ }
-
-        // Fallback: CORS proxy
-        if (!text) {
-            const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            text = await res.text();
-        }
-
-        try { return JSON.parse(text); }
-        catch (e) { throw new Error('Invalid JSON: ' + text.substring(0, 200)); }
-    }
-
-    const fetchDataAndRender = async (preserveCurrentWeek = false) => {
-        dom.loading.style.display = 'flex';
-        dom.grid.innerHTML = '';
-        hideNotice();
-
-        const previousWeekStartDate = currentWeekStartDate ? new Date(currentWeekStartDate) : null;
-
-        try {
-            // FIX: Use GAS API instead of published CSV
-            const result = await gasApi('getData');
-
-            if (!result.success) {
-                throw new Error(result.error || 'Gagal mengambil data');
-            }
-
-            // code.gs getData() returns data with headers matching COLUMNS array
-            // and Tanggal already formatted as DD/MM/YYYY text
-            allScheduleData = result.data || [];
-
-            const now = new Date();
-            dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
-                day: '2-digit', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }) + ` · ${allScheduleData.length} data`;
-
-            let targetMonday;
-
-            if (preserveCurrentWeek && previousWeekStartDate) {
-                targetMonday = previousWeekStartDate;
-            } else {
-                targetMonday = getMonday(new Date());
-            }
-
-            renderCalendar(targetMonday);
-
-        } catch (error) {
-            // Fallback: try CSV if API fails
-            console.warn('GAS API failed, trying CSV fallback:', error.message);
-            try {
-                const SHEETS_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
-                const timestamp = Date.now();
-                const randomParam = Math.floor(Math.random() * 1000000);
-                const sheetsUrl = `${SHEETS_BASE_URL}&t=${timestamp}&r=${randomParam}`;
-
-                let csvText;
-                try {
-                    const response = await fetch(sheetsUrl);
-                    if (response.ok) csvText = await response.text();
-                } catch (_) { /* fallthrough to proxy */ }
-
-                if (!csvText) {
-                    const proxyUrl = `${CORS_PROXY}${encodeURIComponent(sheetsUrl)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    csvText = await response.text();
-                }
-
-                allScheduleData = parseCSV(csvText);
-
-                const now = new Date();
-                dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                }) + ` · ${allScheduleData.length} data (CSV)`;
-
-                let targetMonday;
-                if (preserveCurrentWeek && previousWeekStartDate) {
-                    targetMonday = previousWeekStartDate;
-                } else {
-                    targetMonday = getMonday(new Date());
-                }
-                renderCalendar(targetMonday);
-
-            } catch (csvError) {
-                dom.grid.innerHTML = '<p class="error-msg">Gagal memuat data. Silakan coba lagi nanti.</p>';
-                dom.loading.style.display = 'none';
-                console.error('Both API and CSV failed:', error.message, csvError.message);
-            }
-        }
-    };
-
-    // CSV parser kept as fallback only
     const parseCSV = (text) => {
         const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
         const headersLine = lines[0] || '';
 
+        // Parse headers
         const headers = [];
         let currentHeader = '';
         let inQuotes = false;
@@ -522,23 +403,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         headers.push(currentHeader.trim());
 
-        const data = lines.slice(1).map(line => {
-            if (!line.trim()) return null;
+        // Parse rows
+        const data = [];
+        for (let lineIdx = 1; lineIdx < lines.length; lineIdx++) {
+            const line = lines[lineIdx];
+            if (!line || !line.trim()) continue;
 
             const values = [];
             let currentVal = '';
-            let inQuotes = false;
+            let inQ = false;
 
             for (let i = 0; i < line.length; i++) {
                 const char = line[i];
                 if (char === '"') {
-                    if (inQuotes && line[i + 1] === '"') {
+                    if (inQ && line[i + 1] === '"') {
                         currentVal += '"';
                         i++;
                     } else {
-                        inQuotes = !inQuotes;
+                        inQ = !inQ;
                     }
-                } else if (char === ',' && !inQuotes) {
+                } else if (char === ',' && !inQ) {
                     values.push(currentVal.trim());
                     currentVal = '';
                 } else {
@@ -547,29 +431,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             values.push(currentVal.trim());
 
-            while (values.length < headers.length) values.push('');
-            if (values.length >= headers.length) {
-                const obj = headers.reduce((result, header, index) => {
-                    result[header] = (values[index] || '').replace(/[\r\n]/g, '').trim();
-                    return result;
-                }, {});
-
-                // Normalize header: "R" → "Timestamp"
-                if (obj['R'] !== undefined && obj['Timestamp'] === undefined) {
-                    obj['Timestamp'] = obj['R'];
-                }
-
-                // Normalize Sesi: extract number from various formats
-                if (obj.Sesi) {
-                    obj.Sesi = extractSesiNumber(obj.Sesi);
-                }
-
-                return obj;
+            // Build object from headers
+            const obj = {};
+            for (let h = 0; h < headers.length; h++) {
+                obj[headers[h]] = (values[h] || '').replace(/[\r\n]/g, '').trim();
             }
-            return null;
-        }).filter(Boolean);
+
+            // Normalize "R" header → "Timestamp"
+            if (obj['R'] !== undefined && obj['Timestamp'] === undefined) {
+                obj['Timestamp'] = obj['R'];
+            }
+
+            // Skip empty rows
+            if (!obj.Tanggal && !obj.Hari && !obj.Sesi && !obj.Ruang) continue;
+
+            data.push(obj);
+        }
 
         return data;
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Fetch data from published CSV
+    //  - Direct fetch (Google Sheets CSV supports CORS)
+    //  - CORS proxy fallback
+    //  - Cache-buster to get fresh data
+    // ═══════════════════════════════════════════════════════════════
+    const fetchDataAndRender = async (preserveCurrentWeek = false) => {
+        dom.loading.style.display = 'flex';
+        dom.grid.innerHTML = '';
+        hideNotice();
+
+        const previousWeekStartDate = currentWeekStartDate ? new Date(currentWeekStartDate) : null;
+
+        try {
+            // Cache-buster: force fresh CSV
+            const cacheBuster = `&_t=${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+            const csvUrl = SHEETS_CSV_URL + cacheBuster;
+
+            let csvText = null;
+
+            // Try direct fetch first (Google Sheets CSV supports CORS)
+            try {
+                const response = await fetch(csvUrl);
+                if (response.ok) csvText = await response.text();
+            } catch (_) {
+                // CORS blocked (unlikely for Google Sheets published CSV)
+            }
+
+            // Fallback: CORS proxy
+            if (!csvText) {
+                const proxyUrl = CORS_PROXY + encodeURIComponent(csvUrl);
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                csvText = await response.text();
+            }
+
+            // Parse CSV
+            allScheduleData = parseCSV(csvText);
+
+            // Update footer
+            const now = new Date();
+            dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) + ` · ${allScheduleData.length} data`;
+
+            // Determine which week to show
+            let targetMonday;
+            if (preserveCurrentWeek && previousWeekStartDate) {
+                targetMonday = previousWeekStartDate;
+            } else {
+                targetMonday = getMonday(new Date());
+            }
+
+            renderCalendar(targetMonday);
+
+        } catch (error) {
+            dom.grid.innerHTML = `<p class="error-msg">Gagal memuat data. Silakan coba lagi nanti.<br><small>${error.message}</small></p>`;
+            dom.loading.style.display = 'none';
+            console.error('Fetch error:', error);
+        }
     };
 
     const setFooter = () => {
@@ -595,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Initial load
     fetchDataAndRender(false);
     setFooter();
 });
