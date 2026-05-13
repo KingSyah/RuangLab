@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head><title>JSONP Test</title></head>
+<body style="font-family:monospace;padding:20px;background:#1a1a2e;color:#eee">
+<h2>🔬 JSONP Data Test</h2>
+<div id="status">Loading...</div>
+<div id="output" style="white-space:pre-wrap;margin-top:20px;font-size:13px"></div>
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
+const statusEl = document.getElementById('status');
+const outputEl = document.getElementById('output');
+
+function log(msg) {
+    outputEl.innerHTML += msg + '\n';
+}
+
+statusEl.textContent = 'Requesting JSONP...';
+
+const callbackName = '_testCb_' + Date.now();
+const script = document.createElement('script');
+const timer = setTimeout(() => {
+    statusEl.innerHTML = '❌ <span style="color:#ef4444">JSONP TIMEOUT (12s)</span>';
+    log('Falling back to CSV fetch...');
+    delete window[callbackName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+
+    // Try CSV fallback
+    fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv')
+        .then(r => r.text())
+        .then(csv => {
+            const lines = csv.trim().split('\n');
+            log('\n=== CSV FALLBACK ===');
+            log('Rows: ' + (lines.length - 1));
+            log('Headers: ' + lines[0]);
+            log('\nLast 3 rows:');
+            lines.slice(-3).forEach(l => log('  ' + l));
+        })
+        .catch(e => log('CSV also failed: ' + e.message));
+}, 12000);
+
+window[callbackName] = function(data) {
+    clearTimeout(timer);
+    delete window[callbackName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+
+    statusEl.innerHTML = '✅ <span style="color:#22c55e">JSONP SUCCESS</span>';
+
+    log('=== JSONP RESPONSE ===');
+    log('Success: ' + data.success);
+    log('Total rows: ' + data.total);
+    log('');
+
+    data.data.forEach(row => {
+        const tgl = row.Tanggal || '?';
+        const hari = (row.Hari || '?').padEnd(6);
+        const sesi = (row.Sesi || '?').substring(0, 20).padEnd(20);
+        const ruang = (row.Ruang || '?').padEnd(15);
+        const status = row.Status || '';
+        log(`  Row ${row._rowIndex}: ${tgl} | ${hari} | ${sesi} | ${ruang} | Status="${status}"`);
+    });
+
+    log('');
+    const may18 = data.data.filter(r => r.Tanggal && r.Tanggal.includes('18/05'));
+    if (may18.length > 0) {
+        log('=== MAY 18 ENTRY FOUND ===');
+        may18.forEach(r => {
+            log('  Ruang: ' + r.Ruang);
+            log('  Sesi: ' + r.Sesi);
+            log('  Pengajar: ' + r.Pengajar);
+            log('  Kegiatan: ' + r.Kegiatan);
+            log('  Hari: ' + r.Hari);
+        });
+    } else {
+        log('❌ MAY 18 ENTRY NOT FOUND IN API RESPONSE!');
+    }
+
+    // Test rendering logic
+    log('');
+    log('=== RENDERING TEST ===');
+    const parseTanggal = (str) => {
+        if (!str) return null;
+        const clean = str.split(' ')[0].trim();
+        if (clean.includes('-')) {
+            const parts = clean.split('-');
+            if (parts.length >= 3) return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+            return null;
+        }
+        const parts = clean.split('/');
+        if (parts.length < 3) return null;
+        const a = parseInt(parts[0]), b = parseInt(parts[1]), yyyy = parseInt(parts[2]);
+        let dd, mm;
+        if (a > 12 && b <= 12) { dd = a; mm = b; }
+        else if (b > 12 && a <= 12) { dd = b; mm = a; }
+        else { dd = a; mm = b; }
+        return new Date(yyyy, mm-1, dd);
+    };
+
+    const extractSesiNumber = (val) => {
+        if (!val) return '';
+        const m = String(val).match(/(\d)/);
+        return m ? m[1] : '';
+    };
+
+    const weekStart = new Date(2026, 4, 18); // May 18
+    const weekEnd = new Date(2026, 4, 23); // May 23
+
+    log('Week: May 18-23, 2026');
+    log('');
+
+    const may18Row = data.data.find(r => r.Tanggal && r.Tanggal.includes('18/05'));
+    if (may18Row) {
+        const itemDate = parseTanggal(may18Row.Tanggal);
+        log('Tanggal raw: ' + may18Row.Tanggal);
+        log('Parsed date: ' + itemDate);
+        log('Parsed date valid: ' + (itemDate && !isNaN(itemDate.getTime())));
+        if (itemDate) log('toDateString: ' + itemDate.toDateString());
+
+        const checkDate = new Date(2026, 4, 18);
+        log('Check date (May 18): ' + checkDate.toDateString());
+        log('Dates match: ' + (itemDate.toDateString() === checkDate.toDateString()));
+
+        log('Sesi raw: ' + may18Row.Sesi);
+        log('Extracted sesi number: ' + extractSesiNumber(may18Row.Sesi));
+        log('Session key "1" match: ' + (extractSesiNumber(may18Row.Sesi) === '1'));
+
+        const status = (may18Row.Status || '').toLowerCase().trim();
+        log('Status: "' + status + '"');
+
+        // Simulate weekData filter
+        const inWeekData = data.data.filter(item => {
+            if (!item.Tanggal) return false;
+            const d = parseTanggal(item.Tanggal);
+            if (!d || isNaN(d.getTime())) return false;
+            const s = (item.Status || '').toLowerCase().trim();
+            if (s === 'ulang') return true;
+            if (s === 'mingguan') {
+                const rEnd = new Date(d);
+                rEnd.setDate(d.getDate() + 6);
+                return rEnd >= weekStart && d <= weekEnd;
+            }
+            return d >= weekStart && d <= weekEnd;
+        });
+
+        log('');
+        log('Week data count: ' + inWeekData.length);
+        inWeekData.forEach(item => {
+            const d = parseTanggal(item.Tanggal);
+            log('  ' + item.Tanggal + ' | ' + d.toDateString() + ' | ' + item.Sesi.substring(0,20) + ' | ' + item.Ruang);
+        });
+
+        // Simulate cell filter for Monday Sesi 1
+        const cellSchedules = inWeekData.filter(item => {
+            const sesiMatch = extractSesiNumber(item.Sesi) === '1';
+            const itemDate = parseTanggal(item.Tanggal);
+            const dayMatch = itemDate.toDateString() === checkDate.toDateString();
+            return sesiMatch && dayMatch;
+        });
+
+        log('');
+        log('Cell filter (Mon Sesi 1): ' + cellSchedules.length + ' items');
+        cellSchedules.forEach(s => {
+            log('  → ' + s.Ruang + ' | ' + s.Pengajar + ' | ' + s.Kegiatan);
+        });
+
+        if (cellSchedules.length === 0) {
+            log('');
+            log('❌ BUG FOUND: Item passes weekData filter but NOT cell filter!');
+            log('Debugging...');
+            inWeekData.forEach(item => {
+                const itemDate = parseTanggal(item.Tanggal);
+                const sesiNum = extractSesiNumber(item.Sesi);
+                const sesiMatch = sesiNum === '1';
+                const dayMatch = itemDate.toDateString() === checkDate.toDateString();
+                if (!sesiMatch || !dayMatch) {
+                    log('  Filtered OUT: ' + item.Tanggal + ' sesi=' + sesiNum + '(match=' + sesiMatch + ') day=' + dayMatch);
+                }
+            });
+        }
+    }
+};
+
+script.src = GAS_URL + '?action=getData&callback=' + callbackName + '&_t=' + Date.now();
+script.onerror = function() {
+    clearTimeout(timer);
+    statusEl.innerHTML = '❌ <span style="color:#ef4444">JSONP SCRIPT ERROR</span>';
+    log('Script failed to load. Possible CSP issue.');
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>
