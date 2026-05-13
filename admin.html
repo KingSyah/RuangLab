@@ -435,7 +435,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Sesi</label>
-                            <select id="bulkSesi">
+                            <select id="bulkSesi" onchange="updateBulkPreview()">
+                                <option value="all">📋 Semua Sesi (1–4)</option>
                                 <option value="Sesi 1 (08.30 - 10.30)">Sesi 1 (08.30–10.30)</option>
                                 <option value="Sesi 2 (10.45 - 12.30)">Sesi 2 (10.45–12.30)</option>
                                 <option value="Sesi 3 (14.00 - 16.30)">Sesi 3 (14.00–16.30)</option>
@@ -811,8 +812,7 @@ async function api(action, params = {}) {
     const url = new URL(GAS_URL);
     url.searchParams.set('action', action);
     Object.keys(params).forEach(k => {
-        // Kirim semua nilai termasuk string kosong, agar field bisa di-clear di sheet
-        if (params[k] !== undefined && params[k] !== null) {
+        if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
             url.searchParams.set(k, params[k]);
         }
     });
@@ -1150,8 +1150,13 @@ function updateBulkPreview() {
         return `${dayName} ${dd}/${mm}`;
     });
 
-    let preview = `<strong>Preview:</strong> <span class="count">${dates.length} jadwal</span> akan dibuat<br>`;
-    preview += `<div style="margin-top:4px;font-size:.75rem;line-height:1.6">`;
+    const sesiVal = document.getElementById('bulkSesi').value;
+    const sesiLabel = sesiVal === 'all' ? 'Semua Sesi (1–4)' : sesiVal.slice(0, 6);
+    const totalRows = sesiVal === 'all' ? dates.length * 4 : dates.length;
+
+    let preview = `<strong>Preview:</strong> <span class="count">${totalRows} jadwal</span> akan dibuat`;
+    preview += sesiVal === 'all' ? ` <span style="font-size:.72rem;color:var(--text-muted)">(${dates.length} hari × 4 sesi)</span>` : '';
+    preview += `<br><div style="margin-top:4px;font-size:.75rem;line-height:1.6">`;
     // Show first 10, then summarize
     if (dateStrs.length <= 12) {
         preview += dateStrs.join(' • ');
@@ -1217,7 +1222,10 @@ async function submitBulk() {
     try {
         const res = await api('addBulk', params);
         if (res.success) {
-            toast(`✅ ${res.count} jadwal berhasil ditambahkan!`, 'success');
+            const label = sesi === 'all'
+                ? `${res.count} jadwal (${res.count / 4} hari × 4 sesi)`
+                : `${res.count} jadwal`;
+            toast(`✅ ${label} berhasil ditambahkan!`, 'success');
             loadData();
         } else {
             toast('Gagal: ' + (res.error || ''), 'error');
