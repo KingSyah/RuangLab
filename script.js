@@ -2,7 +2,13 @@
  * ⚠️ SEBELUM EDIT: baca CHANGELOG.md untuk arsitektur & format tanggal
  */
 document.addEventListener('DOMContentLoaded', () => {
-    const SHEETS_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
+    // ═══════════════════════════════════════════════════════════════
+    //  FIX: Pakai GAS API langsung (bukan published CSV) agar data
+    //       selalu up-to-date setelah add/edit/delete via admin.
+    //  Published CSV Google Sheets punya cache lama (bisa berjam-jam)
+    //  sehingga data baru tidak muncul di kalender publik.
+    // ═══════════════════════════════════════════════════════════════
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrf-aBS_KjdcQmt38IbsTmEOogEb17Y6S8AX0y1so67UutWTRKFs5LyNr-JEJhN4v25A/exec';
     const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
     const dom = {
@@ -151,72 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideNotice = () => {
         if (!dom.notice) return;
         dom.notice.style.display = 'none';
-    };
-
-    const parseCSV = (text) => {
-        const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-        const headersLine = lines[0] || '';
-
-        const headers = [];
-        let currentHeader = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < headersLine.length; i++) {
-            const char = headersLine[i];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                headers.push(currentHeader.trim());
-                currentHeader = '';
-            } else {
-                currentHeader += char;
-            }
-        }
-        headers.push(currentHeader.trim());
-
-        const data = lines.slice(1).map(line => {
-            if (!line.trim()) return null;
-
-            const values = [];
-            let currentVal = '';
-            let inQuotes = false;
-
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"') {
-                    if (inQuotes && line[i + 1] === '"') {
-                        currentVal += '"';
-                        i++;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (char === ',' && !inQuotes) {
-                    values.push(currentVal.trim());
-                    currentVal = '';
-                } else {
-                    currentVal += char;
-                }
-            }
-            values.push(currentVal.trim());
-
-            while (values.length < headers.length) values.push('');
-            if (values.length >= headers.length) {
-                const obj = headers.reduce((result, header, index) => {
-                    result[header] = (values[index] || '').replace(/[\r\n]/g, '').trim();
-                    return result;
-                }, {});
-
-                // Normalize Sesi: extract number from various formats
-                if (obj.Sesi) {
-                    obj.Sesi = extractSesiNumber(obj.Sesi);
-                }
-
-                return obj;
-            }
-            return null;
-        }).filter(Boolean);
-
-        return data;
     };
 
     const getLabColorClass = (labName) => {
@@ -442,6 +382,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // ═══════════════════════════════════════════════════════════════
+    //  FIX: Fetch data via GAS API (JSON) instead of published CSV
+    //  - Tidak ada delay cache
+    //  - Data selalu real-time dari Google Sheet
+    //  - Format konsisten (code.gs sudah handle normalisasi tanggal)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Call GAS API with CORS proxy fallback (same pattern as admin.html)
+     */
+    async function gasApi(action) {
+        const url = new URL(GAS_URL);
+        url.searchParams.set('action', action);
+        // Cache-buster
+        url.searchParams.set('t', Date.now());
+        url.searchParams.set('r', Math.floor(Math.random() * 1000000));
+
+        let text;
+
+        // Try direct first
+        try {
+            const res = await fetch(url.toString());
+            if (res.ok) text = await res.text();
+        } catch (_) { /* CORS blocked, fallback to proxy */ }
+
+        // Fallback: CORS proxy
+        if (!text) {
+            const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            text = await res.text();
+        }
+
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error('Invalid JSON: ' + text.substring(0, 200)); }
+    }
+
     const fetchDataAndRender = async (preserveCurrentWeek = false) => {
         dom.loading.style.display = 'flex';
         dom.grid.innerHTML = '';
@@ -450,25 +427,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const previousWeekStartDate = currentWeekStartDate ? new Date(currentWeekStartDate) : null;
 
         try {
-            const timestamp = Date.now();
-            const randomParam = Math.floor(Math.random() * 1000000);
-            const sheetsUrl = `${SHEETS_BASE_URL}&t=${timestamp}&r=${randomParam}`;
+            // FIX: Use GAS API instead of published CSV
+            const result = await gasApi('getData');
 
-            let csvText;
-
-            try {
-                const response = await fetch(sheetsUrl);
-                if (response.ok) csvText = await response.text();
-            } catch (_) { /* fallthrough to proxy */ }
-
-            if (!csvText) {
-                const proxyUrl = `${CORS_PROXY}${encodeURIComponent(sheetsUrl)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                csvText = await response.text();
+            if (!result.success) {
+                throw new Error(result.error || 'Gagal mengambil data');
             }
 
-            allScheduleData = parseCSV(csvText);
+            // code.gs getData() returns data with headers matching COLUMNS array
+            // and Tanggal already formatted as DD/MM/YYYY text
+            allScheduleData = result.data || [];
 
             const now = new Date();
             dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
@@ -487,10 +455,121 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCalendar(targetMonday);
 
         } catch (error) {
-            dom.grid.innerHTML = '<p class="error-msg">Gagal memuat data. Silakan coba lagi nanti.</p>';
-            dom.loading.style.display = 'none';
-            console.error('Fetch error:', error);
+            // Fallback: try CSV if API fails
+            console.warn('GAS API failed, trying CSV fallback:', error.message);
+            try {
+                const SHEETS_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9xmHY6W92EDZKypOk-SRPJHhkMzdAhbg2jhji5_1Dd6uBde-GEWr0bIimXKoEtbUlHfEXZtg364LB/pub?gid=1659908339&single=true&output=csv';
+                const timestamp = Date.now();
+                const randomParam = Math.floor(Math.random() * 1000000);
+                const sheetsUrl = `${SHEETS_BASE_URL}&t=${timestamp}&r=${randomParam}`;
+
+                let csvText;
+                try {
+                    const response = await fetch(sheetsUrl);
+                    if (response.ok) csvText = await response.text();
+                } catch (_) { /* fallthrough to proxy */ }
+
+                if (!csvText) {
+                    const proxyUrl = `${CORS_PROXY}${encodeURIComponent(sheetsUrl)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    csvText = await response.text();
+                }
+
+                allScheduleData = parseCSV(csvText);
+
+                const now = new Date();
+                dom.lastUpdated.textContent = now.toLocaleString('id-ID', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                }) + ` · ${allScheduleData.length} data (CSV)`;
+
+                let targetMonday;
+                if (preserveCurrentWeek && previousWeekStartDate) {
+                    targetMonday = previousWeekStartDate;
+                } else {
+                    targetMonday = getMonday(new Date());
+                }
+                renderCalendar(targetMonday);
+
+            } catch (csvError) {
+                dom.grid.innerHTML = '<p class="error-msg">Gagal memuat data. Silakan coba lagi nanti.</p>';
+                dom.loading.style.display = 'none';
+                console.error('Both API and CSV failed:', error.message, csvError.message);
+            }
         }
+    };
+
+    // CSV parser kept as fallback only
+    const parseCSV = (text) => {
+        const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        const headersLine = lines[0] || '';
+
+        const headers = [];
+        let currentHeader = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < headersLine.length; i++) {
+            const char = headersLine[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                headers.push(currentHeader.trim());
+                currentHeader = '';
+            } else {
+                currentHeader += char;
+            }
+        }
+        headers.push(currentHeader.trim());
+
+        const data = lines.slice(1).map(line => {
+            if (!line.trim()) return null;
+
+            const values = [];
+            let currentVal = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        currentVal += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    values.push(currentVal.trim());
+                    currentVal = '';
+                } else {
+                    currentVal += char;
+                }
+            }
+            values.push(currentVal.trim());
+
+            while (values.length < headers.length) values.push('');
+            if (values.length >= headers.length) {
+                const obj = headers.reduce((result, header, index) => {
+                    result[header] = (values[index] || '').replace(/[\r\n]/g, '').trim();
+                    return result;
+                }, {});
+
+                // Normalize header: "R" → "Timestamp"
+                if (obj['R'] !== undefined && obj['Timestamp'] === undefined) {
+                    obj['Timestamp'] = obj['R'];
+                }
+
+                // Normalize Sesi: extract number from various formats
+                if (obj.Sesi) {
+                    obj.Sesi = extractSesiNumber(obj.Sesi);
+                }
+
+                return obj;
+            }
+            return null;
+        }).filter(Boolean);
+
+        return data;
     };
 
     const setFooter = () => {
