@@ -811,7 +811,8 @@ async function api(action, params = {}) {
     const url = new URL(GAS_URL);
     url.searchParams.set('action', action);
     Object.keys(params).forEach(k => {
-        if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+        // Kirim semua nilai termasuk string kosong, agar field bisa di-clear di sheet
+        if (params[k] !== undefined && params[k] !== null) {
             url.searchParams.set(k, params[k]);
         }
     });
