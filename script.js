@@ -96,23 +96,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const countItemsInWeek = (weekStart) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 5);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        // Normalize weekStart to midnight so comparisons are consistent
+        const ws = new Date(weekStart);
+        ws.setHours(0, 0, 0, 0);
+
         return allScheduleData.filter(item => {
             if (!item.Tanggal) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
+            itemDate.setHours(0, 0, 0, 0);
             const status = (item.Status || '').toLowerCase().trim();
 
-            if (status === 'ulang') return true;
+            if (status === 'ulang') {
+                // Only count ulang if its day-of-week falls within Mon–Sat
+                const dow = itemDate.getDay();
+                return dow >= 1 && dow <= 6;
+            }
             if (status === 'mingguan') {
                 const rangeEnd = new Date(itemDate);
                 rangeEnd.setDate(itemDate.getDate() + 6);
-                return rangeEnd >= weekStart && itemDate <= weekEnd;
+                rangeEnd.setHours(23, 59, 59, 999);
+                return rangeEnd >= ws && itemDate <= weekEnd;
             }
             if (status === 'bulanan') {
-                return (itemDate.getMonth() === weekStart.getMonth() && itemDate.getFullYear() === weekStart.getFullYear())
+                return (itemDate.getMonth() === ws.getMonth() && itemDate.getFullYear() === ws.getFullYear())
                     || (itemDate.getMonth() === weekEnd.getMonth() && itemDate.getFullYear() === weekEnd.getFullYear());
             }
-            return itemDate >= weekStart && itemDate <= weekEnd;
+            return itemDate >= ws && itemDate <= weekEnd;
         }).length;
     };
 
@@ -169,25 +181,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDate = parseTanggal(item.Tanggal);
         if (!itemDate || isNaN(itemDate.getTime())) return false;
 
+        // Normalize all dates to midnight for reliable comparison
+        itemDate.setHours(0, 0, 0, 0);
+        const check = new Date(checkDate);
+        check.setHours(0, 0, 0, 0);
+
         const status = (item.Status || '').toLowerCase().trim();
 
         switch (status) {
             case 'ulang':
-                return itemDate.getDay() === checkDate.getDay();
+                return itemDate.getDay() === check.getDay();
 
             case 'mingguan': {
                 const mEnd = new Date(itemDate);
                 mEnd.setDate(itemDate.getDate() + 6);
-                mEnd.setHours(23, 59, 59);
-                return checkDate >= itemDate && checkDate <= mEnd;
+                mEnd.setHours(23, 59, 59, 999);
+                return check >= itemDate && check <= mEnd;
             }
 
             case 'bulanan':
-                return itemDate.getMonth() === checkDate.getMonth()
-                    && itemDate.getFullYear() === checkDate.getFullYear();
+                return itemDate.getMonth() === check.getMonth()
+                    && itemDate.getFullYear() === check.getFullYear();
 
             default:
-                return itemDate.toDateString() === checkDate.toDateString();
+                return itemDate.getTime() === check.getTime();
         }
     };
 
@@ -199,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const weekEndDate = new Date(weekStartDate);
         weekEndDate.setDate(weekStartDate.getDate() + 5);
+        weekEndDate.setHours(23, 59, 59, 999);
         dom.weekDisplay.textContent = `${formatDate(weekStartDate)} – ${formatDate(weekEndDate)}`;
 
         const todayMonday = getMonday(new Date());
@@ -224,12 +242,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!item.Tanggal) return false;
             const itemDate = parseTanggal(item.Tanggal);
             if (!itemDate || isNaN(itemDate.getTime())) return false;
+            itemDate.setHours(0, 0, 0, 0);
             const status = (item.Status || '').toLowerCase().trim();
 
-            if (status === 'ulang') return true;
+            if (status === 'ulang') {
+                const dow = itemDate.getDay();
+                return dow >= 1 && dow <= 6;
+            }
             if (status === 'mingguan') {
                 const rangeEnd = new Date(itemDate);
                 rangeEnd.setDate(itemDate.getDate() + 6);
+                rangeEnd.setHours(23, 59, 59, 999);
                 return rangeEnd >= weekStartDate && itemDate <= weekEndDate;
             }
             if (status === 'bulanan') {
