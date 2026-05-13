@@ -1,6 +1,6 @@
 /**
  * ⚠️ SEBELUM EDIT: baca CHANGELOG.md untuk arsitektur & format tanggal
- *
+ * hai ganteng lagi ngecek apa.. lol
  */
 
 // ── Supabase config (anon key — memang harus publik untuk client-side) ──
