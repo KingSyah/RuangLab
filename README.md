@@ -1,8 +1,8 @@
-# 🔬 Ruang Lab
+# 🔬 Ruang Lab --> DIPINDAHKAN
 
 Website pengelolaan jadwal penggunaan laboratorium — kalender publik & panel admin.
 
-DIPINDAHKAN
+
 
 🔗 [Lihat versi online](https://kingsyah.github.io/RuangLab/)
 
