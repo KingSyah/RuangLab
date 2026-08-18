@@ -1,17 +1,5 @@
-# 🔬 Ruang Lab --> DIPINDAHKAN
+# RuangLab GitHub Pages Fallback
 
-Website pengelolaan jadwal penggunaan laboratorium — kalender publik & panel admin.
+Paket ini adalah redirect statis mandiri. Tidak memakai JavaScript bundle, framework, atau asset path dari Vite, sehingga dapat diletakkan langsung pada root repositori `RuangLab` di GitHub Pages.
 
-
-
-🔗 [Lihat versi online](https://kingsyah.github.io/RuangLab/)
-
-## Fitur
-
-- Kalender mingguan jadwal lab (Senin–Sabtu, 4 sesi/hari)
-- Badge status jadwal: Pindah, Tambah, Batal, Ulang, Mingguan, Bulanan
-- Admin panel dengan login, CRUD, bulk add, filter, dan export CSV
-
-## Lisensi
-
-Internal use only.
+Isi `index.html`, `404.html`, dan `.nojekyll` harus berada pada root repository. Gunakan URL dengan kapitalisasi tepat: `https://kingsyah.github.io/RuangLab/`.
