@@ -1,4 +1,4 @@
-# RuangLab GitHub Pages Fallback
+# RuangLab GitHub ---> TUTUP
 
 Paket ini adalah redirect statis mandiri. Tidak memakai JavaScript bundle, framework, atau asset path dari Vite, sehingga dapat diletakkan langsung pada root repositori `RuangLab` di GitHub Pages.
 
